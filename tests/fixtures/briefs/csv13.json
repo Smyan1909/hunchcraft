@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "hunchcraft.brief.v0",
+  "requestId": "csv-request-1",
+  "scopeId": "csv-export",
+  "context": { "goalId": "csv-goal", "proposalRevision": "proposal-1" },
+  "brief": {
+    "originalRequest": "Export all filtered rows as CSV and keep the interface usable during export.",
+    "clarifications": [],
+    "requirements": [
+      {
+        "id": "all-rows",
+        "text": "Export all filtered rows, not only the visible page.",
+        "origin": { "kind": "request", "quote": "all filtered rows" }
+      },
+      {
+        "id": "usable-ui",
+        "text": "Keep user interaction usable while export runs.",
+        "origin": { "kind": "request", "quote": "keep the interface usable" }
+      }
+    ],
+    "standards": [],
+    "components": [
+      {
+        "id": "serialize",
+        "name": "CSV serializer",
+        "responsibility": "Produce a CSV download for the filtered results.",
+        "mechanism": "Serialize visible table rows synchronously and download the CSV.",
+        "claimStatus": "source-backed",
+        "requirementRefs": ["all-rows"],
+        "evidenceRefs": ["table-scope"],
+        "assumptionRefs": []
+      },
+      {
+        "id": "indicator",
+        "name": "Export indicator",
+        "responsibility": "Keep the interface usable during export.",
+        "mechanism": "Set exporting=true before serialization and show a spinner.",
+        "claimStatus": "proposed",
+        "requirementRefs": ["usable-ui"],
+        "evidenceRefs": ["export-flow"],
+        "assumptionRefs": []
+      }
+    ],
+    "relationships": [
+      {
+        "id": "export-control",
+        "from": "indicator",
+        "to": "serialize",
+        "contract": "The indicator is visible and interaction continues while synchronous serialization runs.",
+        "requirementRefs": ["usable-ui"],
+        "evidenceRefs": ["export-flow"],
+        "assumptionRefs": []
+      }
+    ],
+    "assumptions": [],
+    "evidence": [
+      {
+        "id": "table-scope",
+        "locator": "src/Table.ts",
+        "startLine": 1,
+        "content": "Table.rows contains only the current page of filtered results.",
+        "provenance": "synthetic-example"
+      },
+      {
+        "id": "export-flow",
+        "locator": "src/export.ts",
+        "startLine": 1,
+        "content": "onExport sets exporting=true, serializes Table.rows in a synchronous loop, and then sets exporting=false. No yield or worker is specified.",
+        "provenance": "synthetic-example"
+      }
+    ],
+    "localQuestions": []
+  }
+}

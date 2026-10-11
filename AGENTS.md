@@ -1,8 +1,9 @@
 # Hunchcraft: agent guidance
 
-Hunchcraft experiments with asynchronous System One decisions for coding agents,
-initially using TypesafeAI's Jev. This repository is a TypeScript ESM foundation;
-the first host adapter and decision workflow are still to be chosen.
+Hunchcraft explores LLM proposal/decomposition paired with TypesafeAI's Jev
+System One judgments for existing coding agents, not only asynchronous review.
+The TypeScript ESM repository now implements the internal M1a offline core;
+no functional public API, CLI, Jev provider, or host adapter exists yet.
 
 ## Start here
 
@@ -55,7 +56,9 @@ upstream TypeSafe skill; put project-specific rules in our own docs and skills.
 - Run `npm run check` after code or tooling changes. For documentation-only work,
   run `npm run format:check` and check paths and instructions.
 - Add meaningful tests for behavior and regressions; default tests are offline.
-  Remove Vitest's temporary `passWithNoTests` on the first behavior test.
+  M1a adds behavior tests and removes Vitest's temporary `passWithNoTests` allowance.
+  Final M1a `npm run check` passed locally on Windows/Node 24.18.1 with 98 tests,
+  independent code review and boundary-test recheck. Inspect Actions for current CI.
 - For package/export changes, inspect `npm pack --dry-run` as well.
 - Keep `package-lock.json` synchronized. TypeScript is pinned to 6.0.3 for current
   typescript-eslint compatibility; check peer support before upgrading.

@@ -24,7 +24,6 @@ authorization wording, including older exploration-only notes.
   are advisory, not explanations, correctness certification, or action permission.
 - TypeScript ESM, one npm package, strict types, inward dependencies, npm lockfile,
   and MIT remain accepted. See [ADR 0001](decisions/0001-typescript-foundation.md).
-- Repository: <https://github.com/Smyan1909/hunchcraft>.
 
 ## Reading order and current status
 
@@ -41,23 +40,25 @@ remain unreleased, not runnable features or settings individually picked by the 
 Do not create competing contracts from research sketches. M3 secure-state feasibility
 and all live/evaluation gates remain unresolved.
 
-**Implementation remains foundation only:** tooling, layer boundaries, contributor
-docs, development skills, and the OpenCode team. No functional public API, CLI, Jev
-provider, shipped consultation skill, host adapter, background loop, evaluation runner,
-or measured outcome exists. Research dated **2026-10-11** inspected documentation,
-source/types, and metadata; it did not run hosts or authenticated model requests.
+**M1a internal offline core is implemented and code-reviewed** against planning
+revision `5f1af21`: strict JSON/brief validation, mandatory checks, and pure identity
+representation ([core modules](../src/core/README.md)). Boundary-test follow-up and
+final local integration verification passed. No functional public API,
+CLI, Jev provider, shipped consultation skill, host adapter, background loop,
+evaluation runner, or measured outcome exists. Research dated **2026-10-11** inspected
+docs/source/types/metadata, not host runtimes or authenticated model requests.
 
 `src/` separates core, ports, application, providers, integrations, and composition.
 Providers include proposed external local-state storage as well as Jev. Inner
 contracts stay SDK-free; imports are inert; concrete wiring belongs in composition.
-Default tests are offline; the empty suite is temporarily allowed. TypeScript 6.0.3
-is pinned for typescript-eslint compatibility. Development: Node 22.13+ on 22.x or
-Node 24.x; package runtime floor: 22.12.0. CI is configured for Node 22/24 on
-Windows/Linux. Prior foundation checks passed locally on Windows/Node 24.18.1.
-Planning verification: `npm run format:check`, whitespace checks, local-link inspection,
-independent technical review/recheck, and M1a implementability review passed. Mermaid
-figures were inspected as text, not runtime-rendered. Inspect git status and GitHub
-Actions before assuming files are pushed or a current remote CI run passed.
+Meaningful offline Vitest tests now exist; `passWithNoTests` is removed. TypeScript
+6.0.3 remains pinned. Development: Node 22.13+ on 22.x or Node 24.x; runtime floor:
+22.12.0. Final orchestrator `npm run check` passed locally on Windows/Node 24.18.1:
+98 tests across four files, type/lint/architecture checks, build and actual package
+entry/declaration validation. Independent fixture/oracle/probe review and array-limit
+recheck passed with no P1/P2 findings. Planning revision `5f1af21` remote CI succeeded;
+that is not current code CI evidence. CI targets Node 22/24 on Windows/Linux. Mermaid
+was inspected as text only. Inspect git status and Actions for synchronization/current CI.
 
 ## Delivery phases and authorization
 
@@ -65,11 +66,10 @@ The latest user authorizes detailed planning/research and **actual offline
 implementation after current todos and planning are complete**. No redundant
 permission to start an in-scope M1 slice is required once that readiness gate closes.
 
-- **D0:** planning review, reconciliation, and M1 freeze complete; orchestrator verifies
-  and pushes the planning milestone before starting source work.
-- **M1a next:** strict brief parsing/validation, mandatory check compiler, pure identity
-  representation, and first meaningful Vitest fixtures; remove `passWithNoTests`.
-- **M1b:** internal consultation/verify with injected consent/hash/clock/fake provider;
+- **D0 complete:** reviewed planning milestone `5f1af21`; M1 contract frozen.
+- **M1a complete:** internal core implemented, independently reviewed and locally
+  verified. Offline fixtures establish mechanics, not semantic quality or savings.
+- **M1b next:** internal consultation/verify with injected consent/hash/clock/fake provider;
   no production fake-success flag, hidden network, worker, or host launcher.
 - **M2–M3:** reviewed offline Jev boundary, secure local-state admission, CLI/package
   and consultation guidance. Windows ACL/root identity feasibility remains an offline
@@ -87,15 +87,14 @@ spend enforcement, and actual host consumption remain open live/evaluation gates
 ## Team handoffs
 
 Development collaborators are not runtime agents; skills do not run workers or expose
-private reasoning. The orchestrator coordinates architect →
-evaluator design → developer → reviewer → developer fixes → reviewer recheck →
-evaluator where measured → marketer → orchestrator integration. Reuse reviewed inputs
-for small slices; specialists return handoffs, never recursively delegate.
+private reasoning. Chain: architect → evaluator design → developer → reviewer →
+developer fixes → reviewer recheck → evaluator where measured → marketer → orchestrator.
+Reuse reviewed inputs for small slices; specialists never recursively delegate.
 
-Every assignment supplies goal, reviewed revision, exact owned files, acceptance
-tests, allowed operations, required checks, and expected output. Serialize shared
-contracts/configuration; parallel writers need disjoint ownership. Preserve concurrent
-work. Return scope changes and authority/data-sharing decisions to the orchestrator.
+Assignments supply goal, reviewed revision, exact files, acceptance tests, allowed
+operations, checks, and expected output. Serialize shared contracts/configuration;
+parallel writers need disjoint ownership. Preserve concurrent work; return scope
+and authority/data-sharing decisions to the orchestrator.
 
 Use `AGENTS.md`, [architecture](architecture.md), layer READMEs, ADRs, and applicable
 skills. Report checks actually run and distinguish source evidence from measurement.

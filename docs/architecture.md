@@ -14,8 +14,9 @@ accepted in [ADR 0002](decisions/0002-existing-agent-extension.md). The accepted
 delivery direction is now CLI-first portable foreground consultation, followed by
 opt-in host-specific adapters. Human scoped session/repository consent governs
 selected original-request and excerpt disclosure to Jev. No native host adapter is
-selected or runtime-verified. The repository remains a foundation with no functional
-decision capability; reduced deliberation, cost, or elapsed time is unmeasured.
+selected or runtime-verified. The repository implements an internal offline core,
+not a public consultation capability; reduced deliberation, cost, or elapsed time
+is unmeasured.
 
 ## Design and delivery references
 
@@ -28,17 +29,37 @@ validation. [Discussion](design-discussion.md) preserves the conceptual history.
 [ADR 0001](decisions/0001-typescript-foundation.md) and ADR 0002 remain accepted.
 
 The planning packet is reconciled and independently reviewed; M1 grammar/compiler/
-identity rules are frozen for offline implementation in
-[ADR 0003](decisions/0003-cli-first-bounded-consultation.md).
-The latest user authorization supersedes the earlier exploration-before-planning
-restriction: after planning todos, independent review/fixes, verification, and the
-orchestrator's reviewed planning milestone push, bounded offline M1–M3 work may begin.
-Start with M1a strict brief validation/compiler/identity fixtures and the first Vitest
-behavior tests, then M1b internal fake consultation. Schema, check limits, defaults,
-and command details are proposals to select/freeze through coordinated review, not
-individual user-picked policies or a released API. No CLI command in the design is
-runnable today. Host execution, live/paid inference, datasets, evaluation, automation
+identity rules are frozen under [ADR 0003](decisions/0003-cli-first-bounded-consultation.md).
+M1a is implemented, independently reviewed, and locally verified against planning
+revision `5f1af21`. Bounded offline M1–M3 work is authorized. Next is M1b internal consultation/
+verification with injected consent/hash/clock/fake provider; no production fake-success
+flag. The wider v0 contract remains proposed and not fully implemented. Schema,
+check limits, defaults, and command details are coordinated implementation choices,
+not individual user-picked policies or a released API. No CLI command in the design
+is runnable today. Host execution, live/paid inference, datasets, evaluation, automation
 expansion, and release remain separately gated; no live/evaluation budget is approved.
+
+### Implemented internal core: M1a
+
+See [the core README](../src/core/README.md) for module contracts:
+
+- `src/core/strict-json.ts`: bounded fatal UTF-8 decoding and strict JSON parsing,
+  including decoded-key duplicate detection and exact safe-integer validation.
+- `src/core/brief.ts`: closed brief reconstruction, bounds, reference/quote
+  consistency, lexical locators, and frozen returned objects/arrays.
+- `src/core/checks.ts`: mandatory checks in canonical order, bindings, shared-state
+  projection, and byte/check caps without silent truncation.
+- `src/core/identity.ts`: canonical text and owned UTF-8 bytes; hashing is a later
+  injected boundary, not Node crypto in core.
+
+These modules have no package-root exports, SDK dependencies, I/O, or network calls.
+Caller-supplied provenance is not authenticated; identity representation is not a
+consent or freshness check. Consultation/verification orchestration, provider answer
+validation, concrete consent storage, CLI wiring, and Jev execution remain future work.
+Meaningful offline Vitest fixtures replace the empty-suite allowance. Final
+`npm run check` passed with 98 tests across four files on Windows/Node 24.18.1;
+independent code and strengthened array-boundary rechecks passed. Remote CI outcomes
+must be inspected separately from these local checks.
 
 ## Dependency direction
 

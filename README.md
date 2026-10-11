@@ -13,10 +13,13 @@ replacement. A human must consent to a scoped session/repository before selected
 original-request material and source excerpts are shared with Jev. No first native
 host adapter has been selected or runtime-tested.
 
-**Status:** foundation only. The detailed planning packet is reconciled and reviewed,
-with the first offline contract frozen for implementation. There is no working Hunchcraft CLI,
-Jev provider, shipped consultation skill, background loop, or measured improvement.
-Design commands and schemas are proposed and unreleased, not runnable instructions.
+**Status:** the internal **M1a offline core is implemented and code-reviewed** under
+the frozen planning contract at `5f1af21`. It parses and validates briefs, compiles
+mandatory checks, and constructs canonical identity representations. Independent
+review, boundary-test follow-up, and final local verification are complete.
+There is no functional public API, working CLI, Jev provider, shipped consultation
+skill, host adapter, background loop, or measured improvement. The proposed v0
+design is not fully implemented; design commands remain unreleased, not runnable instructions.
 
 ## Read the plan
 
@@ -33,14 +36,12 @@ For developers and reviewers, start here:
    Primary documentation and source were inspected on **2026-10-11**; this is not
    runtime compatibility or benchmark evidence.
 
-The latest authorization permits offline implementation after planning todos,
-independent review/fixes, verification, and the orchestrator's planning milestone
-push are complete. Next: **M1a** strict brief validation, check compilation, identity
-representation, and the first Vitest behavior fixtures; then **M1b** an internally
-injected fake consultation—not a production fake-success mode. Exact schemas and
-limits are reviewed implementation proposals, not values individually chosen by
-the user. Live/paid calls, datasets, host runs, and releases need separate approval;
-no live or evaluation budget is authorized.
+Planning review and the M1a milestone are complete. Next is **M1b** internal
+consultation/verification with injected consent, hashing,
+clock, and fake provider—not a production fake-success mode. Offline M1–M3 work is
+authorized; exact schemas and limits are reviewed implementation choices, not
+values individually chosen by the user. Live/paid calls, datasets, host runs, and
+releases need separate approval; no live or evaluation budget is authorized.
 
 See [architecture](docs/architecture.md) for accepted boundaries and
 [design discussion](docs/design-discussion.md) for the reasoning and remaining risks.
@@ -66,15 +67,19 @@ npm run check
 | `npm run lint`              | Type-aware linting, including unhandled promise detection       |
 | `npm run lint:architecture` | Enforce dependency direction and isolation                      |
 | `npm run format`            | Format maintained source and documentation                      |
-| `npm test`                  | Run offline behavior tests as they are added                    |
+| `npm test`                  | Run meaningful offline core behavior and regression tests       |
 | `npm run test:watch`        | Watch tests during development                                  |
 | `npm run check:package`     | Build and load actual ESM package exports                       |
 | `npm run check`             | Run all local quality checks                                    |
 | `npm pack --dry-run`        | Inspect the package payload without publishing                  |
 
-There are no runtime dependencies or functional exports yet. The test runner
-temporarily accepts an empty suite; the first behavior change should add meaningful
-tests and disable that setting. See [CONTRIBUTING.md](CONTRIBUTING.md).
+There are no runtime dependencies or functional package-root exports yet. M1a adds
+meaningful Vitest behavior tests and removes the temporary `passWithNoTests`
+allowance. Final `npm run check` passed locally on Windows/Node 24.18.1, including
+**98 tests across four files**, type/lint/architecture checks, build, and package-entry
+validation. Independent review and boundary-test recheck passed. Inspect GitHub Actions
+for current remote CI results; local checks are not Linux or Node 22 execution evidence.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Project map
 
@@ -86,7 +91,7 @@ src/
   providers/     External capability adapters (planned Jev and local state)
   integrations/  CLI and coding-agent boundaries (planned)
   composition/   Explicit wiring and runtime entry points
-  index.ts       Host-independent public API
+  index.ts       Reserved host-independent public API (no functional exports yet)
 tests/           Cross-module and contract tests
 scripts/         Development and package checks
 docs/            Architecture, research, and decision records
@@ -98,7 +103,10 @@ AGENTS.md        Short operational guidance for coding agents
 Start with [the architecture](docs/architecture.md) and
 [the foundation decision record](docs/decisions/0001-typescript-foundation.md).
 The [foundation research notes](docs/engineering-practices.md) explain the tooling
-sources and choices. Layer descriptions are boundaries, not implemented features.
+sources and choices. The [core README](src/core/README.md) maps the implemented
+internal modules: `strict-json.ts`, `brief.ts`, `checks.ts`, and `identity.ts`.
+Other layer descriptions remain boundaries, not implemented features. Offline
+fixtures prove mechanical contracts, not Jev judgment quality or performance.
 
 ## Working with coding agents
 

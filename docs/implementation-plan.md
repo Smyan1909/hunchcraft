@@ -1,10 +1,14 @@
 # Implementation plan: a CLI-first path to useful consultation
 
-**Status: proposed, documentation only. Planning snapshot: 2026-10-11.**
-This is a work sequence aligned to the canonical proposed v0 contract. Hunchcraft
-currently has a TypeScript foundation, not a working
+**Status: internal M1a implemented, code-reviewed, and locally verified.
+Snapshot: 2026-10-11; frozen planning revision: `5f1af21`.**
+This work sequence remains aligned to the canonical **proposed, unreleased v0**
+contract, not a claim that the entire specification is implemented. The internal
+strict JSON/brief boundary, mandatory check compiler, and pure identity representation
+now exist with meaningful offline tests. There is no functional public API, working
 consultation CLI, Jev provider, shipped consultation skill, host adapter, background
-service, or measured improvement. This update changes documentation only.
+service, or measured improvement. M1b–M3 remain future work. This update is docs only;
+stage procedures below remain the canonical work sequence, not current completion claims.
 
 The latest user explicitly authorizes starting actual implementation after the
 current todos and planning milestone are complete: reconcile the planning packet,
@@ -745,9 +749,34 @@ This is an example handoff, not an assignment or acceptance of those filenames.
 
 ## 15. Phase readiness checklist
 
-All entries describe **future exit evidence**. No runtime row is complete because
-this document exists. Record actual evidence and approval references at handoff;
-do not pre-check gates using configured CI or plans for tests.
+The phase table below describes **required exit evidence**, not automatic completion.
+Record actual evidence and approval references at handoff; do not pre-check gates
+using configured CI or plans for tests.
+
+### Current M1a readiness report
+
+- **D0 contract — done:** reconciled, independently reviewed planning revision
+  `5f1af21`; M1 grammar/templates/bindings/canonicalization frozen under ADR 0003.
+- **M1a core — done, code-reviewed:** internal `strict-json.ts`, `brief.ts`,
+  `checks.ts`, and `identity.ts`; see [core README](../src/core/README.md).
+- **Behavior fixtures:** 98 meaningful tests across four core test files; temporary
+  Vitest `passWithNoTests` removed. Valid maximum/maximum-plus-one array-boundary
+  tests independently rechecked.
+- **Initial verification:** developer and reviewer reported `npm run check` passes
+  locally on Windows/Node 24.18.1; these are source/test checks, not just planning
+  inspection or configured CI.
+- **Independent review:** no P1/P2 findings; golden-fixture check, 30,000-case numeric
+  oracle, 10,000 mutations, and domain probes reported no defects. This is offline
+  mechanical evidence, not performance or Jev evaluation.
+- **Final integration:** final orchestrator `npm run check` passed on Windows/Node
+  24.18.1 with 98 tests, type/lint/architecture checks, build and actual
+  package-entry/declaration loading; docs aligned. Inspect Git for push status.
+- **Next slice — M1b:** internal consult/verify with injected consent/hash/clock/fake
+  provider; no production fake-success flag, hidden network, worker, or host launcher.
+
+M1 as a whole is not complete: no fake-provider consultation path exists yet. M1a
+adds no root exports, CLI, SDK dependencies, network, runtime Jev use, or semantic
+evaluation. No Linux/Node 22 run or current remote CI pass is asserted by this report.
 
 | Phase | Required readiness evidence                                                                                                                                                   | Stop/return condition                                                                                            |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -817,17 +846,14 @@ code/explanations and that SDK integration/configuration is separate from the ho
 Detailed upstream identities, conflicts, prices/legal caveats and source registers
 remain in the research docs; this plan adds no new host implementation claim.
 
-**Checks for this planning handoff:** only documentation reading, link/path review,
-worktree inspection, and targeted formatting verification are in scope. The handoff
-reports actual formatting results separately. Mermaid diagrams are planning text;
-rendering and runtime behavior have not been executed. The system-design link was
-checked by reading the available file. Final architect-owned output/clock fixes and
-independent cross-document review remain orchestrator freeze tasks.
+**Current documentation handoff:** documentation reading, source/config inspection,
+link/path review, worktree inspection, and formatting verification are in scope;
+actual check results are reported separately. Initial M1a source/test verification
+is recorded in the readiness report above, not attributed to this docs-only pass.
+Mermaid diagrams remain planning text, inspected but not runtime-rendered.
 
-**Next useful communication:** independently review/fix the reconciled D0 packet,
-complete formatting and orchestrator documentation push, record the existing user
-authorization and reviewed revision, then assign bounded M1a followed by M1b/M2/M3.
-Do not ask the human again to approve M1 source work. Present live account/data/budget,
-host/main-model execution, dataset acquisition and release questions as separate
-later gates. This handoff remains documentation only; authorized implementation
-starts after planning completion, not during this file update.
+**Next useful communication:** synchronize the reviewed/verified M1a milestone,
+then hand off M1b using its frozen internal contract and acceptance cases.
+No redundant approval for in-scope offline M1 work is needed.
+Keep live account/data/budget, host/main-model execution, dataset acquisition,
+and release questions as separate later gates.
