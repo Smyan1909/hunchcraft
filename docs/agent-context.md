@@ -40,40 +40,47 @@ remain unreleased, not runnable features or settings individually picked by the 
 Do not create competing contracts from research sketches. M3 secure-state feasibility
 and all live/evaluation gates remain unresolved.
 
-**M1a internal offline core is implemented and code-reviewed** against planning
-revision `5f1af21`: strict JSON/brief validation, mandatory checks, and pure identity
-representation ([core modules](../src/core/README.md)). Boundary-test follow-up and
-final local integration verification passed. No functional public API,
-CLI, Jev provider, shipped consultation skill, host adapter, background loop,
-evaluation runner, or measured outcome exists. Research dated **2026-10-11** inspected
-docs/source/types/metadata, not host runtimes or authenticated model requests.
+**M1b/M2 are complete offline: implemented, reviewed and locally verified**, atop `3eef99a`
+and planning revision `5f1af21`. [Core](../src/core/README.md) adds closed results,
+consent and owned values; [application](../src/application/README.md) implements
+injected consult/verify; [M2](../src/providers/typesafe/README.md) uses the real locked
+SDK through fake HTTP. See the [frozen handoff](implementation-notes/m1b-m2.md).
+All findings are resolved/rechecked: M1b false acknowledgments/private-brand exceptions,
+M2 timer/listener disposal settlement and metadata exception handling. The orchestrator
+owns final documentation verification and Git synchronization; inspect history for the
+milestone commit rather than assuming a previous session's hash.
+No functional public API, CLI/bin, secure local-state storage, production composition,
+shipped consultation skill, host adapter, background loop, live inference, evaluation
+runner or measured outcome exists. Research is docs/source/types, not host execution.
 
 `src/` separates core, ports, application, providers, integrations, and composition.
-Providers include proposed external local-state storage as well as Jev. Inner
-contracts stay SDK-free; imports are inert; concrete wiring belongs in composition.
-Meaningful offline Vitest tests now exist; `passWithNoTests` is removed. TypeScript
-6.0.3 remains pinned. Development: Node 22.13+ on 22.x or Node 24.x; runtime floor:
-22.12.0. Final orchestrator `npm run check` passed locally on Windows/Node 24.18.1:
-98 tests across four files, type/lint/architecture checks, build and actual package
-entry/declaration validation. Independent fixture/oracle/probe review and array-limit
-recheck passed with no P1/P2 findings. Planning revision `5f1af21` remote CI succeeded;
-that is not current code CI evidence. CI targets Node 22/24 on Windows/Linux. Mermaid
-was inspected as text only. Inspect git status and Actions for synchronization/current CI.
+Local-state storage remains proposed. Inner contracts stay SDK-free; concrete wiring
+belongs in composition. `@typesafe-ai/sdk@0.6.0` is the sole runtime dependency;
+TypeScript 6.0.3 stays pinned. Imports are inert; offline suites use fixture providers
+or real-SDK/fake-HTTP boundaries, never production fake success. `provider-http`
+metadata through fake HTTP is not network/billing evidence; missing usage/cost stays
+unknown, not zero. `passWithNoTests` is removed. Development: Node 22.13+ on 22.x or
+Node 24.x; runtime floor 22.12.0. Orchestrator integrated `npm run check` passed on
+Windows/Node 24.18.1/npm 12.2.0: **345 tests/13 files**, types/lint/architecture
+(19 modules/81 dependencies), build and actual exports/declarations. Pack dry-run
+passed: **95 files**, no dummy keys/test fakes; SDK declared, not bundled. No Linux/
+Node 22 local run or new-code CI result is asserted; `3eef99a` CI is baseline only.
+CI targets Node 22/24 on Windows/Linux. Inspect Git/Actions after synchronization.
 
 ## Delivery phases and authorization
 
-The latest user authorizes detailed planning/research and **actual offline
-implementation after current todos and planning are complete**. No redundant
-permission to start an in-scope M1 slice is required once that readiness gate closes.
+The latest user requires **M1b and M2 before starting the CLI**; both offline source
+slices are now reviewed/locally verified. Next is M3 offline feasibility. Credentials
+come later via human environment provisioning, never pasted into chat/argv/skills/logs.
 
 - **D0 complete:** reviewed planning milestone `5f1af21`; M1 contract frozen.
 - **M1a complete:** internal core implemented, independently reviewed and locally
   verified. Offline fixtures establish mechanics, not semantic quality or savings.
-- **M1b next:** internal consultation/verify with injected consent/hash/clock/fake provider;
-  no production fake-success flag, hidden network, worker, or host launcher.
-- **M2–M3:** reviewed offline Jev boundary, secure local-state admission, CLI/package
-  and consultation guidance. Windows ACL/root identity feasibility remains an offline
-  platform gate before production wiring; do not weaken privacy to claim support.
+- **M1b/M2 complete offline:** bounded consult/verify,
+  progress/guard/cleanup and strict TypeSafe configuration/transport/answers; no live use.
+- **M3 next:** offline Windows ACL/root-identity feasibility, then
+  secure local-state admission, CLI/bin/package composition and shipped skill. Platform
+  feasibility must precede production wiring; do not weaken privacy to claim support.
 - **Later, separately approved:** named-host smoke, live judgment calibration,
   controlled end-to-end evaluation, optional background adapter, broader distribution.
 

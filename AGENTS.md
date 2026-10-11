@@ -2,8 +2,10 @@
 
 Hunchcraft explores LLM proposal/decomposition paired with TypesafeAI's Jev
 System One judgments for existing coding agents, not only asynchronous review.
-The TypeScript ESM repository now implements the internal M1a offline core;
-no functional public API, CLI, Jev provider, or host adapter exists yet.
+The TypeScript ESM repository implements M1a core, M1b internal consult/verify and
+an M2 TypeSafe boundary: the offline M1b/M2 milestone is implemented, reviewed and
+locally verified. No functional public API, CLI/bin,
+secure storage, production composition, shipped skill or host adapter exists yet.
 
 ## Start here
 
@@ -56,12 +58,20 @@ upstream TypeSafe skill; put project-specific rules in our own docs and skills.
 - Run `npm run check` after code or tooling changes. For documentation-only work,
   run `npm run format:check` and check paths and instructions.
 - Add meaningful tests for behavior and regressions; default tests are offline.
-  M1a adds behavior tests and removes Vitest's temporary `passWithNoTests` allowance.
-  Final M1a `npm run check` passed locally on Windows/Node 24.18.1 with 98 tests,
-  independent code review and boundary-test recheck. Inspect Actions for current CI.
+  Core, consent, application and real-SDK/fake-HTTP contract suites now exist;
+  `passWithNoTests` is removed. All M1b/M2 findings are fixed/rechecked. Orchestrator
+  `npm run check` passed: 345 tests/13 files, types/lint/architecture, build and actual
+  exports/declarations on Windows/Node 24.18.1/npm 12.2.0; `npm pack --dry-run`
+  passed with 95 files, excluding dummy keys/test fakes. No Linux/Node 22 local run
+  or new-code CI result is asserted; prior `3eef99a` CI is baseline evidence only.
 - For package/export changes, inspect `npm pack --dry-run` as well.
 - Keep `package-lock.json` synchronized. TypeScript is pinned to 6.0.3 for current
   typescript-eslint compatibility; check peer support before upgrading.
+  `@typesafe-ai/sdk@0.6.0` is the sole runtime dependency; SDK types stay in providers.
+- Next is M3 offline Windows ACL/root-identity feasibility,
+  then storage, CLI/bin and shipped consultation guidance. No live/evaluation budget
+  is authorized. Credentials belong in later human-provisioned environment values,
+  never chat/argv/skills/logs; keys and passing offline tests are not live consent.
 - Update nearby docs and add an ADR for significant design choices. Report checks
   actually run and distinguish implemented behavior from future design.
 - Commit, push, publish, or create a PR only when explicitly requested.

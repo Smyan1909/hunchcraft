@@ -4,10 +4,11 @@ These distilled notes preserve project conclusions as discussion progresses; the
 are not a transcript, an implementation plan, or an API specification. Update them
 when conclusions change, keeping accepted choices separate from hypotheses.
 
-**Status:** conceptual history with a reconciled, independently reviewed planning packet. Implementation is
-still foundation only: no CLI, Jev provider, shipped consultation skill, host adapter,
-background loop, evaluation runner, or measured result. M1 grammar/compiler/identity
-are frozen for offline implementation; planning synchronization precedes source work.
+**Status:** conceptual history with a reconciled, independently reviewed planning
+packet. M1a and internal M1b/M2 are implemented, reviewed and locally verified offline.
+No CLI, secure storage, production composition, shipped consultation skill, host
+adapter, background loop, evaluation runner, live inference or measured result exists.
+M1 grammar/compiler/identity remain frozen; M3 secure-state feasibility is next.
 
 Read [system design](system-design.md) first for the canonical **proposed v0**
 contract, then [implementation plan](implementation-plan.md),

@@ -1,21 +1,27 @@
 # Implementation plan: a CLI-first path to useful consultation
 
-**Status: internal M1a implemented, code-reviewed, and locally verified.
-Snapshot: 2026-10-11; frozen planning revision: `5f1af21`.**
+**Status: internal M1b/M2 complete offline: implemented, reviewed and locally verified;
+final docs verification/Git synchronization remain. Snapshot: 2026-10-11; M1a baseline:
+`3eef99a`; frozen planning revision: `5f1af21`.**
 This work sequence remains aligned to the canonical **proposed, unreleased v0**
 contract, not a claim that the entire specification is implemented. The internal
-strict JSON/brief boundary, mandatory check compiler, and pure identity representation
-now exist with meaningful offline tests. There is no functional public API, working
-consultation CLI, Jev provider, shipped consultation skill, host adapter, background
-service, or measured improvement. M1b–M3 remain future work. This update is docs only;
-stage procedures below remain the canonical work sequence, not current completion claims.
+core, result/consent/value boundaries, three ports, injected consult/verify and three
+TypeSafe provider modules now exist with offline tests. The real locked SDK is
+exercised through fake HTTP, not live inference. M1b false-acknowledgment/private-brand
+exception fixes, M2 timer/listener disposal settlement and metadata exception handling
+are resolved/rechecked. Integrated checks and package inspection passed; details are
+in the readiness report below. No functional public API, CLI/bin, secure storage,
+production composition, shipped consultation skill, host adapter, background service,
+evaluation runner or measured improvement exists. M3 remains future work. This update
+is docs only; stage procedures below are obligations, not current completion claims.
 
-The latest user explicitly authorizes starting actual implementation after the
-current todos and planning milestone are complete: reconcile the planning packet,
-complete independent review/fixes and formatting, and synchronize the verified
-documentation milestone through the orchestrator **before** starting offline M1–M3.
-That authorization includes bounded source, dependency, test, and package work;
-no redundant M1 source approval is required. Live host/main-model calls, Jev calls,
+The latest user requires **M1b and M2 done before starting the CLI**. Both offline
+source slices are now reviewed and locally verified, satisfying that offline prerequisite.
+Next is offline Windows ACL/root-identity feasibility, then secure storage, CLI/bin/package
+composition and shipped guidance. Credentials come later through human environment
+provisioning, never pasted into chat/argv/skills/logs. Prior offline M1–M3 authorization
+includes bounded source, dependency, test and package work, not live admission.
+Live host/main-model calls, Jev calls,
 paid evaluations, dataset acquisition, automation expansion, and release/publication
 remain separately gated. **No live or evaluation budget is approved.** This latest
 instruction takes precedence over older authorization wording in nearby documents.
@@ -61,8 +67,8 @@ for this update, including its parser/compiler, provider, consent/storage, ident
 result, module-placement, and acceptance contracts. Record the latest user
 authorization and independently reviewed contract revision at D0 exit. Architect-owned
 review fixes to partial-output commit semantics and observable clock limits are
-reconciled and independently rechecked. M1 grammar/compiler/identity are ready to
-freeze under ADR 0003; the requirements below are regression obligations, not a
+reconciled and independently rechecked. M1 grammar/compiler/identity are frozen
+under ADR 0003; the requirements below are regression obligations, not a
 second schema. If documents disagree, return the conflict to the orchestrator rather
 than silently adopting an earlier research sketch.
 
@@ -71,18 +77,18 @@ than silently adopting an earlier research sketch.
 These gates are separate decisions. A reviewed design, a successful offline test,
 and permission to publish documentation each have different meanings.
 
-| Gate                                 | Required decision/evidence                                                                                                     | Does not authorize                                                                                             |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| **Planning completion — first**      | Reconciled docs, independent review/fixes, formatting and orchestrator's verified documentation push                           | Starting source work before current planning todos close; live calls, datasets or benchmarks                   |
-| **Offline M1–M3 — authorized next**  | Latest user authorization recorded with reviewed contract revision, bounded work order, exact ownership and acceptance tests   | Live host/main-model/Jev calls, account validation, paid benchmarks, datasets, automation expansion or release |
-| **Host capability execution**        | User approves a named host/version/executor, installation/provisioning if needed, sandbox operations, and smoke scope          | Jev disclosure, main-model/cloud spend beyond the approval, or compatibility with other versions               |
-| **Live judgment execution**          | Authorized human approves session/provider/data scope, applicable terms, finite budgets, model/check versions, and exact study | Automatic disclosure, new repos/tasks, increased limits, background execution, or external sharing             |
-| **Controlled end-to-end evaluation** | Approved frozen protocol, task rights, environments, independent grading, observability, budgets, and stopping rule            | Production benchmark features, official leaderboard claims for a modified protocol, or broad rollout           |
-| **Automation expansion**             | Core value signal plus separate approval of one verified host path, authority, consent, lifecycle, and budgets                 | Universal background delivery, another host, or main-model rework                                              |
-| **Distribution/release/outreach**    | Separate explicit approval for the relevant package release, npm publication, PR, or external post                             | Other publication actions or sharing raw/private artifacts                                                     |
+| Gate                                    | Required decision/evidence                                                                                                     | Does not authorize                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| **Planning completion — first**         | Reconciled docs, independent review/fixes, formatting and orchestrator's verified documentation push                           | Starting source work before current planning todos close; live calls, datasets or benchmarks                   |
+| **Offline M1–M3 — authorized, ordered** | Latest user authorization, reviewed contract and exact ownership/tests; M1b/M2 fixes and verification before M3 CLI work       | Live host/main-model/Jev calls, account validation, paid benchmarks, datasets, automation expansion or release |
+| **Host capability execution**           | User approves a named host/version/executor, installation/provisioning if needed, sandbox operations, and smoke scope          | Jev disclosure, main-model/cloud spend beyond the approval, or compatibility with other versions               |
+| **Live judgment execution**             | Authorized human approves session/provider/data scope, applicable terms, finite budgets, model/check versions, and exact study | Automatic disclosure, new repos/tasks, increased limits, background execution, or external sharing             |
+| **Controlled end-to-end evaluation**    | Approved frozen protocol, task rights, environments, independent grading, observability, budgets, and stopping rule            | Production benchmark features, official leaderboard claims for a modified protocol, or broad rollout           |
+| **Automation expansion**                | Core value signal plus separate approval of one verified host path, authority, consent, lifecycle, and budgets                 | Universal background delivery, another host, or main-model rework                                              |
+| **Distribution/release/outreach**       | Separate explicit approval for the relevant package release, npm publication, PR, or external post                             | Other publication actions or sharing raw/private artifacts                                                     |
 
 The orchestrator alone integrates milestones, routes human decisions, updates shared
-context, and handles the already authorized reviewed/verified documentation commits
+context, and handles the already authorized reviewed/verified code/docs commits
 and pushes. Specialists return their work; they do not commit, push, publish, or
 recursively delegate in this plan. GitHub synchronization is not an npm release.
 
@@ -210,7 +216,8 @@ prove useful overlap. M7 release can omit background support entirely.
 
 ## 5. Stage D0 — research, design reconciliation, and approval
 
-**Current scope:** planning documentation and read-only research. No runtime work.
+**D0 scope (completed):** planning documentation and read-only research. No runtime
+work was part of D0; current offline implementation status is recorded below.
 
 **Inputs:** bootstrap documents, the two research reports, evaluation proposal,
 canonical system design, accepted ADRs, and the latest user direction.
@@ -263,6 +270,13 @@ protocol/security choices get an ADR through a separately assigned owner.
 
 **Goal:** make the approved artifact travel through a real bounded use case, with
 synthetic answers, before adding network or host machinery.
+
+**Current delivery:** M1a is verified; M1b core/ports/application and fixture suites
+are implemented, with reviewer false-acknowledgment/private-brand exception fixes
+corrected and rechecked. Integrated offline acceptance passed alongside M2. See
+the [frozen M1b/M2 handoff](implementation-notes/m1b-m2.md),
+[core](../src/core/README.md), [ports](../src/ports/README.md) and
+[application](../src/application/README.md) for actual module contracts.
 
 **Dependencies:** completed D0 and the already supplied M1–M3 authorization. No real
 key, concrete TypeSafe construction, host launch, or semantic evaluation.
@@ -330,6 +344,15 @@ explicit file owner, including the temporary empty-suite setting.
 **Goal:** implement the approved provider translation and safe transport without
 sending a live request. Library types alone are not external-data validation.
 
+**Current delivery:** `configuration.ts`, `transport.ts` and `provider.ts` exist;
+`@typesafe-ai/sdk@0.6.0` is the sole runtime dependency, pinned in manifest/lockfile.
+SDK types remain provider-local. Real-SDK/fake-HTTP tests include the application
+contract path; no authenticated service behavior is verified. Timer/listener disposal
+settlement and metadata exception fixes are resolved/rechecked. Integrated
+`npm run check` and package inspection passed; final docs/Git synchronization remain.
+See [TypeSafe boundary/audit](../src/providers/typesafe/README.md) and
+[suite map](../tests/README.md). M2 completion is offline, not live validation.
+
 **Dependencies:** reviewed M1 contracts; offline dependency operations are authorized
 after D0. Check
 the actual installed, locked SDK artifact/declarations before relying on research
@@ -383,6 +406,9 @@ blocked until separately approved. Do not ship a fake result as a live fallback.
 **Dependencies:** reviewed M1/M2 behavior and reconciled canonical CLI/session design.
 Exact commands, flags, envelopes, paths, configuration precedence, limits, and exit
 codes come from that specification. This plan deliberately gives none of its own.
+M3 has not started. The required M1b/M2 review/local verification is complete;
+start M3 with offline Windows ACL/root-identity feasibility, not credential or
+production provider wiring. Offline acceptance never automatically opens live admission.
 
 **Chain:** architect confirms human-consent and executable boundaries → evaluator
 defines admission/accounting and process observables → developer implements bounded
@@ -753,30 +779,47 @@ The phase table below describes **required exit evidence**, not automatic comple
 Record actual evidence and approval references at handoff; do not pre-check gates
 using configured CI or plans for tests.
 
-### Current M1a readiness report
+### Current M1b/M2 readiness report
 
 - **D0 contract — done:** reconciled, independently reviewed planning revision
   `5f1af21`; M1 grammar/templates/bindings/canonicalization frozen under ADR 0003.
 - **M1a core — done, code-reviewed:** internal `strict-json.ts`, `brief.ts`,
   `checks.ts`, and `identity.ts`; see [core README](../src/core/README.md).
-- **Behavior fixtures:** 98 meaningful tests across four core test files; temporary
-  Vitest `passWithNoTests` removed. Valid maximum/maximum-plus-one array-boundary
-  tests independently rechecked.
-- **Initial verification:** developer and reviewer reported `npm run check` passes
-  locally on Windows/Node 24.18.1; these are source/test checks, not just planning
-  inspection or configured CI.
-- **Independent review:** no P1/P2 findings; golden-fixture check, 30,000-case numeric
-  oracle, 10,000 mutations, and domain probes reported no defects. This is offline
-  mechanical evidence, not performance or Jev evaluation.
-- **Final integration:** final orchestrator `npm run check` passed on Windows/Node
-  24.18.1 with 98 tests, type/lint/architecture checks, build and actual
-  package-entry/declaration loading; docs aligned. Inspect Git for push status.
-- **Next slice — M1b:** internal consult/verify with injected consent/hash/clock/fake
-  provider; no production fake-success flag, hidden network, worker, or host launcher.
+- **M1b implemented offline:** closed core results/consent/values, three SDK-free ports
+  and three application modules. Injected fixture consent/hash/clock/provider tests
+  exercise bounded consult/verify, guard/progress, preparation and owned cleanup.
+- **M1b review fixes — corrected/rechecked:** false cleanup acknowledgment after
+  confirmed admission and private-brand exception extraction regressions addressed.
+  These findings are resolved; integrated acceptance also passed.
+- **M2 implemented offline:** three TypeSafe modules, locked SDK artifact/type audit,
+  manifest/lock pin `@typesafe-ai/sdk@0.6.0`, and real-SDK/fake-HTTP provider/application
+  contract tests. The SDK is the sole runtime dependency; TypeScript remains 6.0.3.
+- **Behavior evidence:** core/consent/application/provider/import and cross-layer
+  contract suites exist; `passWithNoTests` is removed. Fixture and fake-HTTP results
+  establish mechanical contracts only, not semantic quality, cost or savings.
+- **M2 review fixes — resolved/rechecked:** timer/listener disposal exceptions cannot
+  strand success/rejection/abort/deadline settlement; metadata exceptions are sanitized.
+  Cleanup remains best effort when disposal fails, not guaranteed resource reclamation.
+- **Final integration — passed:** orchestrator ran `npm run check` on **Windows/
+  Node 24.18.1/npm 12.2.0**: **345 tests/13 files**, types/lint/architecture
+  (**19 modules/81 dependencies**), build and actual export/declaration loading.
+- **Package inspection — passed:** orchestrator `npm pack --dry-run` reported **95 files**,
+  excluding dummy keys/test fakes. The SDK is declared as a runtime dependency, not
+  bundled `node_modules`. This is package inspection, not publication or CLI execution.
+- **Milestone synchronization:** the orchestrator verifies final documentation and
+  commits/pushes reviewed code/docs. Inspect Git history for the actual milestone ID.
+  These integration/package results are not runs performed by this docs-only pass.
+- **Next — M3:** offline Windows ACL/root-identity feasibility, secure local-state
+  admission, then CLI/bin/composition and shipped skill. Do not weaken privacy to
+  claim platform support; offline completion does not open live admission.
 
-M1 as a whole is not complete: no fake-provider consultation path exists yet. M1a
-adds no root exports, CLI, SDK dependencies, network, runtime Jev use, or semantic
-evaluation. No Linux/Node 22 run or current remote CI pass is asserted by this report.
+M1b/M2 are complete offline: implemented, reviewed and locally verified.
+No root API, CLI/bin, secure state, production
+wiring, shipped skill, host execution, live inference or semantic evaluation exists.
+`provider-http` through fake HTTP is not network/billing evidence; missing usage/cost
+is unknown, not zero. No quality/cost/savings outcome, Linux/Node 22 execution or
+new-code CI result is asserted by this report. Prior `3eef99a` CI success belongs to
+the baseline, not this integration. Credentials and separately approved live gates remain later.
 
 | Phase | Required readiness evidence                                                                                                                                                   | Stop/return condition                                                                                            |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -848,12 +891,13 @@ remain in the research docs; this plan adds no new host implementation claim.
 
 **Current documentation handoff:** documentation reading, source/config inspection,
 link/path review, worktree inspection, and formatting verification are in scope;
-actual check results are reported separately. Initial M1a source/test verification
-is recorded in the readiness report above, not attributed to this docs-only pass.
+actual documentation check results are reported separately. M1a baseline and M1b/M2
+review/local integration/package evidence are recorded above, not attributed to this docs-only pass.
 Mermaid diagrams remain planning text, inspected but not runtime-rendered.
 
-**Next useful communication:** synchronize the reviewed/verified M1a milestone,
-then hand off M1b using its frozen internal contract and acceptance cases.
-No redundant approval for in-scope offline M1 work is needed.
+**Next useful communication:** the orchestrator verifies final docs and synchronizes
+reviewed/verified M1b/M2 code/docs, recording the new commit only after it exists.
+Then hand off M3 offline Windows ACL/root-identity feasibility before CLI work.
+No live admission or credential provisioning is implied by that milestone.
 Keep live account/data/budget, host/main-model execution, dataset acquisition,
 and release questions as separate later gates.

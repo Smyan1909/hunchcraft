@@ -68,7 +68,8 @@ Read [system design](system-design.md) → [implementation plan](implementation-
 → [evaluation plan](evaluation-plan.md) → supporting
 [host](research/agent-integration.md) and [provider](research/jev-cli.md) research.
 The packet is reconciled and independently reviewed; M1 grammar/compiler/identity are frozen;
-the implementation is still foundation only. Design commands are not runnable.
+M1a and internal M1b/M2 are implemented and verified offline. Secure storage and
+CLI composition remain M3 work; design commands are not runnable.
 Research is dated source inspection, not a host/runtime test or live measurement.
 
 The latest user permits offline implementation after planning todos, independent

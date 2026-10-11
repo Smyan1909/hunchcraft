@@ -1,11 +1,15 @@
 # Hunchcraft system design: proposed v0 consultation contract
 
-**Design snapshot:** 2026-10-11. **Implementation status:** foundation only.
-**Runtime verification and live result count:** zero.
+**Design snapshot:** 2026-10-11. **Implementation status:** M1a core and M1b/M2
+internal consultation/provider boundaries implemented, reviewed and locally verified
+offline. Secure storage, CLI/bin, production composition and shipped consultation
+guidance remain M3 work. **Live result and host-runtime verification count:** zero.
 
 This is the canonical **proposed v0 implementation specification**, not an existing
 API or released product. The conditional offline implementation authorization
-below is separate from this specification and is not yet execution of it. “Must” below specifies a
+below is separate from this specification; completed offline work is recorded in
+[shared context](agent-context.md) and the [implementation plan](implementation-plan.md).
+“Must” below specifies a
 requirement of this proposal; it does not mean the user has approved every schema,
 rubric, numerical limit, or implementation detail. Commands shown here are not
 runnable Hunchcraft capabilities today.
