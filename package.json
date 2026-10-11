@@ -1,0 +1,58 @@
+{
+  "name": "hunchcraft",
+  "version": "0.0.0",
+  "description": "Asynchronous System One decision-making experiments for coding agents.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Smyan1909/hunchcraft.git"
+  },
+  "homepage": "https://github.com/Smyan1909/hunchcraft#readme",
+  "bugs": {
+    "url": "https://github.com/Smyan1909/hunchcraft/issues"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "lint:architecture": "depcruise --config .dependency-cruiser.cjs src",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:package": "npm run build && node scripts/check-package.mjs",
+    "check": "npm run format:check && npm run typecheck && npm run lint && npm run lint:architecture && npm test && npm run check:package",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "dependency-cruiser": "18.5.0",
+    "eslint": "10.12.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "5.0.3"
+  }
+}
