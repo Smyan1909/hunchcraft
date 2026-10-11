@@ -7,15 +7,45 @@ such as OpenCode, Codex, and Claude Code, through explicit consultation and auto
 or background evaluations. The initial decision model is TypesafeAI's **Jev**, which
 returns typed judgments and probabilities, not code or generated explanations.
 
-The scope is supported plugins or a skill plus CLI, not a custom agent harness,
-host fork, or main-model replacement. The host and distribution surface remain open.
-We are exploring LLM proposal/decomposition paired with Jev evaluation, not just
-background review. See [the design discussion](docs/design-discussion.md) for agreed
-direction, hypotheses, and open questions; planning, implementation, and benchmark
-design follow collaborative technical exploration and explicit user approval.
+The accepted direction is **CLI-first, portable foreground consultation**, followed
+by opt-in host adapters—not a custom agent harness, host fork, or main-model
+replacement. A human must consent to a scoped session/repository before selected
+original-request material and source excerpts are shared with Jev. No first native
+host adapter has been selected or runtime-tested.
 
-**Status:** TypeScript project foundation. Agent integrations, decision providers,
-and the background execution loop are still to be implemented.
+**Status:** foundation only. The detailed planning packet is reconciled and reviewed,
+with the first offline contract frozen for implementation. There is no working Hunchcraft CLI,
+Jev provider, shipped consultation skill, background loop, or measured improvement.
+Design commands and schemas are proposed and unreleased, not runnable instructions.
+
+## Read the plan
+
+For developers and reviewers, start here:
+
+1. [System design](docs/system-design.md): canonical proposed v0 command, brief,
+   checks, consent, and lifecycle contract.
+2. [Implementation plan](docs/implementation-plan.md): dependency-ordered slices,
+   review handoffs, and authorization gates.
+3. [Evaluation plan](docs/evaluation-plan.md): proposed controls and measurement;
+   no trials have run.
+4. Research: [host integration](docs/research/agent-integration.md) and
+   [Jev/CLI](docs/research/jev-cli.md), plus evaluation sources in the evaluation plan.
+   Primary documentation and source were inspected on **2026-10-11**; this is not
+   runtime compatibility or benchmark evidence.
+
+The latest authorization permits offline implementation after planning todos,
+independent review/fixes, verification, and the orchestrator's planning milestone
+push are complete. Next: **M1a** strict brief validation, check compilation, identity
+representation, and the first Vitest behavior fixtures; then **M1b** an internally
+injected fake consultation—not a production fake-success mode. Exact schemas and
+limits are reviewed implementation proposals, not values individually chosen by
+the user. Live/paid calls, datasets, host runs, and releases need separate approval;
+no live or evaluation budget is authorized.
+
+See [architecture](docs/architecture.md) for accepted boundaries and
+[design discussion](docs/design-discussion.md) for the reasoning and remaining risks.
+[ADR 0003](docs/decisions/0003-cli-first-bounded-consultation.md) records the reviewed
+CLI-first offline implementation direction, not semantic validation or live-call approval.
 
 ## Development
 
@@ -53,8 +83,8 @@ src/
   core/          Pure domain values and decision policies
   ports/         Hunchcraft-owned interfaces for external capabilities
   application/   Use cases and asynchronous orchestration
-  providers/     Isolated decision backends (initially Jev)
-  integrations/  Isolated coding-agent adapters
+  providers/     External capability adapters (planned Jev and local state)
+  integrations/  CLI and coding-agent boundaries (planned)
   composition/   Explicit wiring and runtime entry points
   index.ts       Host-independent public API
 tests/           Cross-module and contract tests
@@ -67,7 +97,8 @@ AGENTS.md        Short operational guidance for coding agents
 
 Start with [the architecture](docs/architecture.md) and
 [the foundation decision record](docs/decisions/0001-typescript-foundation.md).
-The [research notes](docs/engineering-practices.md) explain the sources and choices.
+The [foundation research notes](docs/engineering-practices.md) explain the tooling
+sources and choices. Layer descriptions are boundaries, not implemented features.
 
 ## Working with coding agents
 

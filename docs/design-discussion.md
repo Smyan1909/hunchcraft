@@ -4,19 +4,46 @@ These distilled notes preserve project conclusions as discussion progresses; the
 are not a transcript, an implementation plan, or an API specification. Update them
 when conclusions change, keeping accepted choices separate from hypotheses.
 
-**Status:** technical exploration. No new functional capability, host integration,
-Jev provider, background loop, evaluation, or benchmark is implemented. See
-[architecture](architecture.md), [shared context](agent-context.md), and the
-[foundation ADR](decisions/0001-typescript-foundation.md).
+**Status:** conceptual history with a reconciled, independently reviewed planning packet. Implementation is
+still foundation only: no CLI, Jev provider, shipped consultation skill, host adapter,
+background loop, evaluation runner, or measured result. M1 grammar/compiler/identity
+are frozen for offline implementation; planning synchronization precedes source work.
+
+Read [system design](system-design.md) first for the canonical **proposed v0**
+contract, then [implementation plan](implementation-plan.md),
+[evaluation plan](evaluation-plan.md), and supporting
+[host](research/agent-integration.md) / [Jev/CLI](research/jev-cli.md) research.
+Commands, schemas, check templates, and limits are unreleased proposals—not runnable
+features or values individually chosen by the user. Review/freeze implementation
+defaults together; earlier examples here and in research are not competing contracts.
+See also [architecture](architecture.md), [shared context](agent-context.md), and
+[ADR 0001](decisions/0001-typescript-foundation.md).
+
+### Latest authorization supersedes the earlier exploration gate
+
+Detailed planning/research is authorized, as is actual **offline implementation
+after current todos and planning are complete**. Close independent review/fixes,
+reconciliation/freeze, documentation verification, and the orchestrator's reviewed
+planning milestone push before starting M1a. No redundant approval is needed for
+the next in-scope offline slice. The orchestrator owns ongoing reviewed, verified
+code/docs commits and pushes; specialists return their handoffs without Git writes.
+
+This does not authorize paid/live Jev or main-model calls, private-data transmission,
+datasets, host runtime launches, benchmarks, automation expansion, releases, npm
+publication, PRs, or outreach. **No live or evaluation budget is approved.**
 
 ## Agreed direction
 
 - **Extend existing agents.** Use supported plugins or a skill plus CLI without
   fundamental host rework, a custom harness/fork, or main-model replacement.
-  [ADR 0002](decisions/0002-existing-agent-extension.md) accepts this boundary only;
-  the host and distribution surface remain unchosen.
-- **Support both modes.** Explicit agent consultation and automatic/background
-  evaluations are desired. Not every judgment must be asynchronous.
+  [ADR 0002](decisions/0002-existing-agent-extension.md) accepts this boundary. No
+  native host adapter is selected or runtime-verified.
+- **CLI first, then opt-in adapters.** Portable foreground consultation comes first;
+  host-specific automatic/background evaluation is later, separately gated work.
+  Not every judgment must be asynchronous.
+- **Human scoped consent.** Selected original-request material and actual source
+  excerpts may be shared with Jev under human session/repository opt-in and minimized,
+  documented disclosure. A key, skill, or agent assertion alone is not consent.
 - **Separate proposing from judging.** Pursue LLM proposal/decomposition paired
   with Jev evaluation, rather than just background review. One possible aim is
   less expensive main-model deliberation; there is no evidence of savings yet.
@@ -29,20 +56,22 @@ Jev provider, background loop, evaluation, or benchmark is implemented. See
   evaluation criteria; the user and applicable repository conventions supply
   contextual standards; the main LLM supplies proposal material and optional neutral
   local questions; code can instantiate known subjects; Jev evaluates. This accepts
-  the high-level responsibility split, not a concrete rubric, schema, algorithm,
-  check-selection mechanism, or authority policy. The LLM need not diagnose its
-  proposal or enumerate every possible failure before consultation.
-- **Explore before planning.** Continue collaborative technical discussion before
-  planning implementation, evaluation, or benchmarks. Obtain explicit user approval
-  of a plan before carrying it out; documenting an idea is not approval to build it.
+  the high-level responsibility split. The proposed v0 now specifies a mandatory
+  compiler and advisory output policy, independently reviewed; it is not a released
+  capability. The LLM need not diagnose its proposal or enumerate every possible
+  failure before consultation.
+- **Plan, review, then implement offline.** The earlier exploration-before-planning
+  restriction is superseded by the latest authorization above. A design document
+  still does not authorize live execution or paid evaluation.
 
-### Shared example, not a selected first slice
+### Shared example and the proposed first slice
 
 For a feature request, the LLM could emit a compact provisional outline of core
 components grounded in the repository. Jev could evaluate relevance, cleanliness,
 and fit to the desired outcome, with signals returned for the agent to use.
 Critiquing one plan does not require enumerating alternatives. This illustrates
-the intended separation; it does not establish feasibility or prescribe a workflow.
+the intended separation; it does not establish feasibility. The canonical proposed
+v0 now selects bounded component-proposal consultation as its smallest testable slice.
 
 The judge needs the original request and relevant source evidence, not only the
 proposer's interpretation. Otherwise, a missed requirement or misleading framing
@@ -65,11 +94,13 @@ A skill is guidance; it does not itself run a background worker.
 
 ### A "decision brief"
 
-A possible name for the task artifact is **decision brief**. It might contain an
-objective, the original request, evidence, constraints, a proposal or options,
-and an evaluation question. This is an exploratory artifact, not an accepted
-schema, API, serialization format, or required set of fields. Options may be
-unnecessary for single-plan critique.
+The earlier **decision brief** sketch considered an objective, original request,
+evidence, constraints, proposal or options, and an evaluation question. A concrete
+proposed v0 brief now exists in [system design](system-design.md), preserving the
+request and supplied excerpts alongside a bounded component proposal. Its M1 contract
+is reviewed and frozen for offline implementation, not a released runtime API.
+Competing options/Choice are outside this first slice;
+the historical sketch does not define required fields.
 
 The useful question is what the judge needs to evaluate a bounded proposal without
 turning the brief into another expensive planning exercise or losing source facts.
@@ -79,8 +110,9 @@ turning the brief into another expensive planning exercise or losing source fact
 One discussion hypothesis is to make a compact proposal, obtain focused judgments,
 then expand only the parts needing attention. This is not an accepted algorithm.
 Whether it reduces deliberation, improves outcomes, or merely adds overhead remains
-unknown. No iteration limit, threshold, queue, fallback, API/protocol, or authority
-policy has been selected.
+unknown. Proposed v0 bounds one foreground consultation, specifies no-judgment
+failure and freshness handling, and renders all raw Noul/Score signals without numeric
+filtering. These are reviewable proposed policies, not an implemented iterative loop.
 
 ### Judging a provisional outline
 
@@ -132,7 +164,8 @@ Feedback need not invent a prose explanation: retain the judgment's association
 with its exact question, implicated component or requirement, and supplied evidence.
 A renderer could identify a flagged scope check and point to the pagination excerpt
 without claiming Jev generated a diagnosis or proved the implementation incorrect.
-The actual feedback format and subsequent agent behavior remain open.
+The proposed feedback format is now specified in system design; actual host uptake
+and usefulness remain unverified. Jev's judgment is advisory, not action permission.
 
 The agreed standard allows plausible mechanisms with explicit unknowns at early
 consultation. Planning-stage suitability must not be confused with implementation
@@ -145,16 +178,19 @@ useful checks without requiring the main LLM to perform the evaluation first.
 Hunchcraft-owned reusable questions could
 cover recurring dimensions, while the original request, proposal, and repository
 evidence instantiate their subjects. Bounded task-specific questions could supplement
-them, but their author, generation cost, and protection against proposer omissions
-remain unresolved. Supplying a check or concern must not be treated as supplying its
-answer. No concrete question-generation mechanism or rubric is accepted.
+them. Proposed v0 mechanically compiles mandatory whole-proposal and subject checks,
+with optional neutral LLM questions only as supplements. Generation cost, semantic
+coverage, and correlated omissions remain evaluation risks. Supplying a check or
+concern must not be treated as supplying its answer; literal M1 criteria are reviewed
+and frozen in [ADR 0003](decisions/0003-cli-first-bounded-consultation.md).
 
 The agreed roles and their still-open operational details are:
 
 - **Hunchcraft authors reusable evaluation intent and criteria.** Candidate check
   families include requested-outcome coverage, source consistency, component
   justification, and responsibility boundaries. The proposer should not be the
-  sole selector of baseline checks; their actual scope and applicability remain open.
+  sole selector of baseline checks. Proposed v0 supplies mandatory request/domain and
+  component checks, including when no extracted requirement names an omission.
 - **Users and applicable repository conventions supply contextual standards.**
   Preserve provenance and distinguish authorized requirements from assumptions or
   arbitrary instructions embedded in source data. Standards can conflict or need
@@ -169,7 +205,8 @@ The agreed roles and their still-open operational details are:
   fallible; retain the original request rather than trust the extracted list alone.
 - **Jev judges supplied questions.** It can select among an authored check library
   if given bounded candidates, but it does not generate new questions. Such selection
-  adds cost and coverage risks; it is an optional alternative, not an accepted stage.
+  adds cost and coverage risks; it is an alternative outside proposed v0, not a stage
+  of its mandatory compiler.
 
 For the CSV example, "Does the proposed source cover all filtered results given
 the supplied pagination contract?" does not require the proposer to diagnose a
@@ -185,39 +222,41 @@ expensive work upstream rather than remove it. Neither is a selected design.
 TypeSafe's autoresearch cookbook demonstrates LLM-authored questions judged by Jev
 in a labeled wine-review feature-discovery workflow, not live coding-agent savings.
 
-The next useful distinction is whether early consultation should require the LLM
-to enumerate implicit domain obligations (for example, CSV escaping) or let reusable
-domain checks supplement its outline. Mechanically instantiating questions cannot
-discover arbitrary missing obligations. Correctness constraints should be separated
-from new product scope; the fallback for unfamiliar tasks remains unresolved.
+Proposed v0 includes a whole-proposal domain-gap check alongside extracted subjects.
+This is a fallible route to noticing implicit obligations (for example, CSV escaping),
+not a guarantee of arbitrary-domain coverage. Mechanically instantiating questions
+cannot discover arbitrary missing obligations. Correctness constraints remain separate
+from new product scope; unfamiliar-task coverage needs evaluation.
 
 ### Readiness and remaining material questions
 
-The discussion now provides a coherent conceptual foundation; another broad theory
-layer is not necessary before targeted feasibility work. It does not yet provide an
-implementation-ready design. These are gaps to discuss, not accepted policies or an
-implementation/evaluation plan:
+The conceptual foundation now has a detailed proposed v0 and implementation/evaluation
+plans. Final review must establish implementability before offline code starts.
+These risks remain for review or separately authorized live/evaluation work:
 
 1. **Host observation and delivery:** identify supported public artifacts, what the
    host awaits, and when a judgment can reach the agent before its decision passes.
    Explicit consultation and background assistance may need different mechanisms.
-2. **Feedback influence:** decide what a signal should prompt and how stale,
-   uncertain, contradicted, unsupported, or unavailable judgments are treated.
-   Positive judgments do not authorize actions or certify correctness.
+2. **Feedback influence:** test whether raw advisory signals prompt useful follow-up
+   without unwarranted rework. The proposed contract distinguishes stale, uncertain,
+   contradicted, unsupported, and unavailable results; no judgment authorizes action
+   or certifies correctness.
 3. **Evidence and domain coverage:** retain source grounding and an honest limit
    for implicit obligations and unfamiliar tasks. The agreed roles do not guarantee
    completeness or select a domain-specialization mechanism.
-4. **Privacy and bounded failure:** define what user/repository material may be sent
-   to Jev and under which permission, plus behavior on timeouts, provider errors,
-   and finite work/spend limits. No data-sharing or fallback policy is accepted yet.
+4. **Privacy and bounded failure:** scoped human consent is accepted direction;
+   proposed v0 defines minimized disclosure, admission and failure behavior. Secure
+   local state, Windows ACL/root identity feasibility, account terms/retention, and
+   enforceable total-spend policy remain gates. Local call caps are not dollar caps.
 5. **Whole-loop value:** identify the deliberation or error the exchange could avoid,
    accounting for proposal preparation, retrieval, feedback consumption, and rework.
-   Actual benefit remains empirical; no benchmark protocol is chosen.
+   Actual benefit remains empirical; the evaluation protocol is proposed, not executed.
 
-For a later scoped plan, establish a credible host path and behavioral, evidence,
-data-sharing, and failure boundaries. Concrete wording, thresholds, check sets,
-and budget tuning need not all be settled now; they can be explicit experimental
-variables in a subsequently agreed plan. No host or feature is selected here.
+Use coordinated review to freeze the canonical command/schema/check/default revision
+for offline implementation, rather than selecting a second protocol from these notes.
+Later named-host smoke and live calibration need their own approvals; account/data
+rights, budgets, semantic coverage, and actual model consumption are not established
+by the planning packet.
 
 ## Judgment boundaries and risks
 
@@ -227,7 +266,8 @@ variables in a subsequently agreed plan. No host or feature is selected here.
   separate from semantic evaluation.
 - **Do not average away requirements.** A clean-looking proposal that misses a
   required outcome is still deficient. Preserve requirement-fit signals separately
-  from compensating preferences such as cleanliness; the composition policy is open.
+  from compensating preferences such as cleanliness. Proposed v0 returns separate raw
+  signals rather than a compensating approval score.
 - **Relevance is not just visible feature work.** Filtering should not remove
   necessary support work such as tests, compatibility handling, or lifecycle cleanup.
 - **Coverage matters.** Missing candidates or incomplete evidence can prevent a
@@ -295,16 +335,21 @@ discussion, not evidence that Hunchcraft works or a host supports a proposed hoo
    evaluation produce a signal before the relevant decision has passed?
 5. Which supported candidate-host surfaces can observe public task artifacts and
    return signals? What do they await, and what lifecycle/permission limits apply?
-6. How much influence should a signal have, and when should the agent gather evidence,
-   expand a proposal, disregard a stale result, or ask the user? Authority remains open.
-7. After exploration, what would count as evidence of useful judgment and reduced
-   deliberation rather than shorter output? No evaluation or benchmark plan is set.
+6. Do advisory signals lead to useful evidence gathering and revision without unsafe
+   deference? Action rights remain with the human/host, not Jev; proposed freshness
+   rules do not prove actual host compliance.
+7. Will the proposed controls show useful judgment and lower whole-task cost rather
+   than shorter output or scaffolding-only gains? The evaluation plan is unexecuted.
 
-## Next suggested discussion
+## Next delivery handoff
 
-Move from broad conceptual discussion to targeted feasibility: identify where a
-judgment could reach an unchanged agent in time to affect a decision, then examine
-candidate hosts' current supported observation, await, and delivery surfaces. Address
-feedback influence, coverage limits, privacy, and failure boundaries before proposing
-an implementation-ready plan. Do not select a host or first slice prematurely; obtain
-explicit user approval before carrying out a subsequent plan.
+Finish D0: reconcile the planning packet, resolve independent review findings, freeze
+the reviewed revision/defaults, verify docs, and synchronize the milestone through
+the orchestrator. Then start **M1a** strict brief validation, mandatory compilation,
+pure identity representation, and the first meaningful Vitest fixtures (removing
+`passWithNoTests`). **M1b** follows with injected consent/hash/clock/fake consultation
+and verification, not a production fake-success flag, network path, or host launcher.
+
+Keep live semantic quality, implicit/unfamiliar-task coverage, account retention/terms,
+total-spend enforcement, and runtime host consumption visibly open. Offline fakes
+prove contract mechanics, not savings or Jev accuracy.
