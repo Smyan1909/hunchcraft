@@ -141,6 +141,48 @@ them, but their author, generation cost, and protection against proposer omissio
 remain unresolved. Supplying a check or concern must not be treated as supplying its
 answer. No question-generation mechanism or rubric is accepted.
 
+One candidate division of responsibility is:
+
+- **Hunchcraft authors reusable evaluation intent and criteria.** Candidate check
+  families include requested-outcome coverage, source consistency, component
+  justification, and responsibility boundaries. The proposer should not be the
+  sole selector of baseline checks; their actual scope and applicability remain open.
+- **Users and applicable repository conventions supply contextual standards.**
+  Preserve provenance and distinguish authorized requirements from assumptions or
+  arbitrary instructions embedded in source data. Standards can conflict or need
+  clarification; they are not all equivalent in authority.
+- **The LLM supplies proposal material and optional local questions.** Responsibilities,
+  mechanisms, known assumptions, and evidence can be stated without first producing
+  a failure diagnosis. The LLM may add neutral task-specific questions, but should
+  not have to predict Jev's answer or invent every check before consulting it.
+- **Code instantiates already-identified subjects into reusable questions.** Filling
+  a known requirement or component into a template can be mechanical. Extracting
+  complete requirements from an unstructured request is semantic work and remains
+  fallible; retain the original request rather than trust the extracted list alone.
+- **Jev judges supplied questions.** It can select among an authored check library
+  if given bounded candidates, but it does not generate new questions. Such selection
+  adds cost and coverage risks; it is an optional alternative, not an accepted stage.
+
+For the CSV example, "Does the proposed source cover all filtered results given
+the supplied pagination contract?" does not require the proposer to diagnose a
+failure first. "Confirm the loading indicator keeps the interface responsive"
+presupposes support that needs evaluation; a mechanism-focused check would instead
+ask whether the outline identifies how interaction is preserved during export.
+Neutral wording reduces answer-smuggling but does not guarantee unbiased judgments.
+
+Reusable or domain-specific check libraries could be developed outside individual
+agent turns, amortizing authoring effort. A separate LLM could propose bespoke
+questions, but its latency, semantic validation, and shared-error risks could move
+expensive work upstream rather than remove it. Neither is a selected design.
+TypeSafe's autoresearch cookbook demonstrates LLM-authored questions judged by Jev
+in a labeled wine-review feature-discovery workflow, not live coding-agent savings.
+
+The next useful distinction is whether early consultation should require the LLM
+to enumerate implicit domain obligations (for example, CSV escaping) or let reusable
+domain checks supplement its outline. Mechanically instantiating questions cannot
+discover arbitrary missing obligations. Correctness constraints should be separated
+from new product scope; the fallback for unfamiliar tasks remains unresolved.
+
 ## Judgment boundaries and risks
 
 - **Semantic judgment is not verification.** Jev evaluates supplied state; it does
@@ -196,6 +238,14 @@ discussion, not evidence that Hunchcraft works or a host supports a proposed hoo
   documented risks include literal reading, indirection, irrelevant state, numeric
   precision, adversarial content, and option-order sensitivity. These observations
   are version-specific, not permanent limits for every Jev version.
+- [Noul](https://docs.typesafe.ai/primitives/noul.md): reusable question wording and
+  per-subject data can be combined in structured instructions; IDs are bookkeeping,
+  not model-visible meaning. This supports mechanical instantiation once subjects
+  exist, not guaranteed semantic coverage.
+- [Autoresearch feature discovery](https://docs.typesafe.ai/cookbooks/autoresearch_feature_discovery.md):
+  a separate LLM proposes questions, Jev supplies numeric judgments, and supervised
+  feedback selects features. That wine-review example illustrates distinct roles;
+  it does not establish an efficient question-generation stage for Hunchcraft.
 
 ## Open questions
 
@@ -216,8 +266,8 @@ discussion, not evidence that Hunchcraft works or a host supports a proposed hoo
 
 ## Next suggested discussion
 
-Discuss who frames reusable and task-specific judgments, and which feedback can
-focus the agent's next investigation without requiring a full implementation analysis.
+Discuss the candidate division of judgment-framing responsibilities, particularly
+who identifies implicit domain obligations and how unfamiliar tasks get useful checks.
 Then compare explicit consultation with possible background delivery against current
 host docs, without selecting a first host or slice prematurely. Capture new agreements
 here; only after collaborative exploration should a plan be proposed for user approval.

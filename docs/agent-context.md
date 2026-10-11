@@ -62,13 +62,16 @@ Current exploration distinguishes source contradiction, missing evidence, and mo
 uncertainty; considers request-to-proposal coverage, component justification, and
 focused relationship checks; and asks how question/evidence bindings can make typed
 feedback useful without fabricated explanations. None is an accepted rubric or policy.
-Next discuss who frames reusable and task-specific judgments without doing the
-evaluation first. Then explore supported observation/await/delivery mechanisms in
-candidate hosts without selecting a first slice prematurely. A "decision brief" and
-bounded propose/judge/targeted-expand remain exploratory, not an accepted schema or
-algorithm. No thresholds, queues, API/protocol, or authority policy are decided.
-Short output is not compute evidence; skills alone do not run workers or expose
-private reasoning.
+Judgment-framing discussion proposes Hunchcraft-authored reusable criteria, contextual
+user/repo standards, LLM proposal material and optional neutral local checks, mechanical
+instantiation of known subjects, and Jev evaluation. This is not an accepted role split
+or rubric. Extracting requirements remains semantic work; optional checks must not be
+the only route to flagging proposer omissions. Next discuss implicit domain obligations
+and unfamiliar-task coverage, then supported host observation/await/delivery mechanisms
+without selecting a first slice prematurely. A "decision brief" and bounded
+propose/judge/targeted-expand remain exploratory, not an accepted schema or algorithm.
+No thresholds, queues, API/protocol, or authority policy are decided. Short output is
+not compute evidence; skills alone do not run workers or expose private reasoning.
 
 ## Team handoffs
 
