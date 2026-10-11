@@ -25,6 +25,13 @@ Jev provider, background loop, evaluation, or benchmark is implemented. See
   for every mechanism. Strengthen evidence as decisions become concrete; an early
   judgment is not implementation proof. Known source conflicts remain distinct
   from unresolved dependencies, and unknowns do not establish nonexistent capabilities.
+- **Separate judgment-framing responsibilities.** Hunchcraft supplies reusable
+  evaluation criteria; the user and applicable repository conventions supply
+  contextual standards; the main LLM supplies proposal material and optional neutral
+  local questions; code can instantiate known subjects; Jev evaluates. This accepts
+  the high-level responsibility split, not a concrete rubric, schema, algorithm,
+  check-selection mechanism, or authority policy. The LLM need not diagnose its
+  proposal or enumerate every possible failure before consultation.
 - **Explore before planning.** Continue collaborative technical discussion before
   planning implementation, evaluation, or benchmarks. Obtain explicit user approval
   of a plan before carrying it out; documenting an idea is not approval to build it.
@@ -133,15 +140,16 @@ proof. Which evidence becomes necessary at later decision points remains open.
 
 ### Who frames the judgments?
 
-Another exploratory question is how to form useful checks without requiring the
-main LLM to perform the evaluation first. Hunchcraft-owned reusable questions could
+The high-level responsibility split is agreed. The remaining question is how to form
+useful checks without requiring the main LLM to perform the evaluation first.
+Hunchcraft-owned reusable questions could
 cover recurring dimensions, while the original request, proposal, and repository
 evidence instantiate their subjects. Bounded task-specific questions could supplement
 them, but their author, generation cost, and protection against proposer omissions
 remain unresolved. Supplying a check or concern must not be treated as supplying its
-answer. No question-generation mechanism or rubric is accepted.
+answer. No concrete question-generation mechanism or rubric is accepted.
 
-One candidate division of responsibility is:
+The agreed roles and their still-open operational details are:
 
 - **Hunchcraft authors reusable evaluation intent and criteria.** Candidate check
   families include requested-outcome coverage, source consistency, component
@@ -182,6 +190,34 @@ to enumerate implicit domain obligations (for example, CSV escaping) or let reus
 domain checks supplement its outline. Mechanically instantiating questions cannot
 discover arbitrary missing obligations. Correctness constraints should be separated
 from new product scope; the fallback for unfamiliar tasks remains unresolved.
+
+### Readiness and remaining material questions
+
+The discussion now provides a coherent conceptual foundation; another broad theory
+layer is not necessary before targeted feasibility work. It does not yet provide an
+implementation-ready design. These are gaps to discuss, not accepted policies or an
+implementation/evaluation plan:
+
+1. **Host observation and delivery:** identify supported public artifacts, what the
+   host awaits, and when a judgment can reach the agent before its decision passes.
+   Explicit consultation and background assistance may need different mechanisms.
+2. **Feedback influence:** decide what a signal should prompt and how stale,
+   uncertain, contradicted, unsupported, or unavailable judgments are treated.
+   Positive judgments do not authorize actions or certify correctness.
+3. **Evidence and domain coverage:** retain source grounding and an honest limit
+   for implicit obligations and unfamiliar tasks. The agreed roles do not guarantee
+   completeness or select a domain-specialization mechanism.
+4. **Privacy and bounded failure:** define what user/repository material may be sent
+   to Jev and under which permission, plus behavior on timeouts, provider errors,
+   and finite work/spend limits. No data-sharing or fallback policy is accepted yet.
+5. **Whole-loop value:** identify the deliberation or error the exchange could avoid,
+   accounting for proposal preparation, retrieval, feedback consumption, and rework.
+   Actual benefit remains empirical; no benchmark protocol is chosen.
+
+For a later scoped plan, establish a credible host path and behavioral, evidence,
+data-sharing, and failure boundaries. Concrete wording, thresholds, check sets,
+and budget tuning need not all be settled now; they can be explicit experimental
+variables in a subsequently agreed plan. No host or feature is selected here.
 
 ## Judgment boundaries and risks
 
@@ -266,8 +302,9 @@ discussion, not evidence that Hunchcraft works or a host supports a proposed hoo
 
 ## Next suggested discussion
 
-Discuss the candidate division of judgment-framing responsibilities, particularly
-who identifies implicit domain obligations and how unfamiliar tasks get useful checks.
-Then compare explicit consultation with possible background delivery against current
-host docs, without selecting a first host or slice prematurely. Capture new agreements
-here; only after collaborative exploration should a plan be proposed for user approval.
+Move from broad conceptual discussion to targeted feasibility: identify where a
+judgment could reach an unchanged agent in time to affect a decision, then examine
+candidate hosts' current supported observation, await, and delivery surfaces. Address
+feedback influence, coverage limits, privacy, and failure boundaries before proposing
+an implementation-ready plan. Do not select a host or first slice prematurely; obtain
+explicit user approval before carrying out a subsequent plan.

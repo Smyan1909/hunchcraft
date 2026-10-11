@@ -17,6 +17,10 @@ user instruction take precedence over stale status notes.
 - Early proposals may use plausible mechanisms with explicit unknowns; strengthen
   evidence as decisions become concrete. This is not implementation proof or permission
   to assume unsupported capabilities. Known source conflicts remain distinct from gaps.
+- The high-level responsibility split is agreed: Hunchcraft reusable criteria,
+  contextual user/repo standards, LLM proposal material and optional neutral questions,
+  mechanical instantiation of known subjects, and Jev evaluation. Concrete rubric,
+  schema, algorithm, check selection, and signal authority remain open.
 - Initial decision model: TypesafeAI's Jev. It returns Choice, Score, and Noul
   answers and probabilities; Hunchcraft code owns scheduling and actions.
 - TypeScript ESM, one npm package, strict typing, human-readable decoupling, npm
@@ -62,13 +66,13 @@ Current exploration distinguishes source contradiction, missing evidence, and mo
 uncertainty; considers request-to-proposal coverage, component justification, and
 focused relationship checks; and asks how question/evidence bindings can make typed
 feedback useful without fabricated explanations. None is an accepted rubric or policy.
-Judgment-framing discussion proposes Hunchcraft-authored reusable criteria, contextual
-user/repo standards, LLM proposal material and optional neutral local checks, mechanical
-instantiation of known subjects, and Jev evaluation. This is not an accepted role split
-or rubric. Extracting requirements remains semantic work; optional checks must not be
-the only route to flagging proposer omissions. Next discuss implicit domain obligations
-and unfamiliar-task coverage, then supported host observation/await/delivery mechanisms
-without selecting a first slice prematurely. A "decision brief" and bounded
+The conceptual model is coherent; next move to targeted feasibility rather than another
+broad theory layer. Verify a supported host observation/await/delivery opportunity and
+clarify feedback influence, coverage limits, privacy/data-sharing, and bounded failure
+before an implementation-ready plan. Extracting requirements remains semantic work;
+optional checks must not be the only route to flagging proposer omissions. Implicit
+domain obligations and unfamiliar-task coverage remain open. Do not select a host or
+first slice prematurely. A "decision brief" and bounded
 propose/judge/targeted-expand remain exploratory, not an accepted schema or algorithm.
 No thresholds, queues, API/protocol, or authority policy are decided. Short output is
 not compute evidence; skills alone do not run workers or expose private reasoning.
