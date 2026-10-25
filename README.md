@@ -78,9 +78,10 @@ exists. Existing coding agents need no custom harness or main-model replacement.
 
 S1/S2/S3 are implemented and independently reviewed offline. Full macOS checks passed
 on Node 22.23.4 and 24.22.1: **431 tests**, plus actual packed-install/bin checks.
-Corrected six-cell remote CI remains pending. The earlier S2 Linux blocked-output
-test setup was repaired with verified FIFO saturation and emergency fixture cleanup;
-its failed run is not Linux acceptance. S2 Windows Node 22/24 CI passed.
+The [six-cell CI run](https://github.com/Smyan1909/hunchcraft/actions/runs/40216837322)
+passed on macOS, Linux and Windows with Node 22/24, including actual packed-install
+checks. The earlier Linux fixture failure is repaired. Windows terminal interruption
+is not asserted; full test coverage is not identical across platforms.
 Target platforms are macOS, Linux and Windows. Configured CI is not proof of a passed run. See
 [shared context](https://github.com/Smyan1909/hunchcraft/blob/main/docs/agent-context.md) for milestone-specific evidence and current gaps.
 Offline checks do not establish live inference, usefulness or savings.

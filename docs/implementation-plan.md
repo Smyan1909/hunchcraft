@@ -1,6 +1,6 @@
 # Implementation plan: the smallest useful CLI
 
-**Replanned 2026-10-25. S1/S2/S3 implemented/reviewed offline; corrected remote CI pending.**
+**Replanned 2026-10-25. S1/S2/S3 implemented/reviewed offline; corrected six-cell CI passed.**
 The user requested portable, stateless consultation instead of the former persistent
 session/OS-security milestone. [ADR 0004](decisions/0004-stateless-portable-consultation.md)
 records the change. [System design](system-design.md) owns the implemented CLI contract.
@@ -91,8 +91,8 @@ Unicode/CRLF, failure exits, EPIPE and POSIX interruption. Usage/example ship wi
 118-file artifact. Full checks pass 431 tests/16 files on macOS/Node 22.23.4 and
 24.22.1; independent reviewer reran Node 24 and package checks. Linux's old blocked-output
 test setup is replaced by verified FIFO saturation, with parent-owned emergency cleanup
-and a deliberate hung-fixture regression. Six remote CI cells are configured; their
-corrected results must be observed before claiming platform acceptance.
+and a deliberate hung-fixture regression. All six remote CI cells passed at `ad9945b`,
+including actual packed installation. Windows terminal interruption remains unasserted.
 
 **Owners:** developer for package/process tests; marketer for README/usage; reviewer
 for correctness and observed portability. Assign disjoint files when working in parallel.
@@ -138,7 +138,8 @@ and marketer for usage docs. Do not invoke the entire team for every slice.
 
 Independent planning review completed on 2026-10-25 with no blocking findings. The
 two low-severity corrections are incorporated: validation check count 6–16 and
-v1/in-process fixed error wording. S1/S2/S3 are implemented and reviewed locally; save
-the verified milestone and observe corrected remote CI. No credentials or host choice
-are needed. Do not start retired secure storage. The user authorized the
+v1/in-process fixed error wording. S1/S2/S3 are implemented and reviewed locally;
+verified milestones are saved and corrected remote CI passed. The accepted offline
+CLI is complete. Await a user-selected next milestone; no live budget or publication
+is authorized. Do not start retired secure storage. The user authorized the
 working specialist model for this session; repository agent configuration is unchanged.

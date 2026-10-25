@@ -60,7 +60,8 @@ with lazy credential access and one invocation-owned output child. Parent code p
 no descriptor writes; exact output acknowledgment and child exit 0 are required under
 the original Operation. Terminal diagnostics are omitted. Package-root imports still
 export no functional API. S3 verifies actual packed installation/shims and ships public
-usage/example. Local macOS Node 22/24 checks pass; corrected remote CI remains pending.
+usage/example. Local macOS Node 22/24 checks and corrected six-cell remote CI pass.
+Windows terminal interruption is not asserted; coverage differs by platform.
 
 ## Runtime boundary
 

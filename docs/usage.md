@@ -13,10 +13,11 @@ Use Node.js 22.13+ on the 22.x line or Node 24.x, and npm, for checkout tooling.
 The installed package declares a Node runtime floor of 22.12.0. Portability targets
 macOS, Linux and Windows on Node-supported hardware. See [shared context](https://github.com/Smyan1909/hunchcraft/blob/main/docs/agent-context.md)
 for observed checks. Actual packed-install/shim checks and full local macOS checks
-passed on Node 22.23.4 and 24.22.1. Corrected six-cell remote CI remains pending.
-The earlier S2 Linux blocked-output setup defect is repaired; its failed run is not
-Linux acceptance. S2 Windows Node 22/24 CI passed. A configured matrix is not evidence
-that it passed.
+passed on Node 22.23.4 and 24.22.1. The corrected
+[six-cell CI run](https://github.com/Smyan1909/hunchcraft/actions/runs/40216837322)
+passed on macOS, Linux and Windows with Node 22/24, including actual packed installation.
+Windows terminal interruption is not asserted. These observed combinations do not
+prove every descriptor, hardware or Node version works.
 
 From the repository root:
 

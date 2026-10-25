@@ -43,9 +43,10 @@ passed. Session/consent/identity/durable verify
 modules and obsolete tests are retired. Inner grammar/compiler goldens, provider source
 and dependency pins are unchanged. S1 is independently reviewed offline, including four
 added concurrency/mutation cases. S2 milestone **`c458e47`** is committed/pushed, adding
-CLI/bin and explicit Node composition, independently reviewed offline. Its actual
-packed-install/platform acceptance remains S3. Its remote CI passed Windows Node 22/24
-but failed Linux Node 22/24 on the blocked-output deadline assertion; see below.
+CLI/bin and explicit Node composition, independently reviewed offline. Its initial CI
+passed Windows Node 22/24 but failed Linux Node 22/24 on a fixture defect; see below.
+S3 milestone **`ad9945b`** is committed/pushed; corrected six-cell CI and actual
+packed-install checks passed. The accepted offline CLI milestone is complete.
 No functional public API, shipped skill, host adapter,
 live inference, evaluation runner or measured quality/cost/savings exists.
 
@@ -81,8 +82,8 @@ wording were corrected in the contract. Planning checks are recorded below.
 
 ## Next step
 
-Save the verified S3 milestone, observe corrected remote CI, then ask the user to select
-the next milestone. Do not
+Await the user's next milestone. No live budget, host trial, release or publication
+is approved. Do not
 start the retired Windows ACL/storage milestone. No credentials or host choice are
 needed for the next offline slice.
 
@@ -119,8 +120,8 @@ asynchronous write and announced readiness without establishing saturation or ha
 short writes. Linux returned 0 in 111/117 ms; no production termination defect is
 identified by that evidence. The required repair is verified saturation before the
 CLI starts, not larger arbitrary buffers/sleeps or disabling the regression. Linux
-acceptance requires corrected Node 22/24 tests. Local Node 22/actual
-packed-install checks are still S3 work.
+acceptance required corrected Node 22/24 tests; those passed in S3 below. This old
+failed run remains historical, not the final acceptance result.
 
 ## S3 verification (2026-10-25)
 
@@ -147,8 +148,38 @@ Orchestrator final `npm run check` passed **431 tests/16 files** on macOS/Node
 24.22.1/npm 11.17.0, including actual packed-install checks, ten npm-shim cases,
 build/exports, types/lint/architecture and formatting. Pack dry-run passed **118 files**.
 Independent final doc review passed 146 targets across 40 files; low status wording
-is corrected. Corrected six-cell remote CI remains pending until this milestone is pushed.
+is corrected. S3 is committed/pushed as `ad9945b`.
 No live/provider usefulness, coding-host trial, release or publication is asserted.
+
+### Observed S3 remote CI
+
+All six jobs in [run 40216837322](https://github.com/Smyan1909/hunchcraft/actions/runs/40216837322)
+passed at full SHA `ad9945b307ac36df2bfd02f70b7ed4cafaea5fb6`. Orchestrator observed
+completion and inspected job/log evidence: each ran `npm ci`, full `npm run check`
+(including actual packed installation) and `npm pack --dry-run` successfully.
+
+| Runner               | Node    | npm     | Outcome |
+| -------------------- | ------- | ------- | ------- |
+| macos-latest (arm64) | 22.23.3 | 10.9.9  | Passed  |
+| macos-latest (arm64) | 24.21.0 | 11.19.0 | Passed  |
+| ubuntu-latest (x64)  | 22.23.3 | 10.9.9  | Passed  |
+| ubuntu-latest (x64)  | 24.21.0 | 11.19.0 | Passed  |
+| windows-latest (x64) | 22.23.4 | 10.9.9  | Passed  |
+| windows-latest (x64) | 24.22.1 | 11.19.1 | Passed  |
+
+Every actual packed check verified 118 files, cache-only SDK payload, inert installed
+root, ten npm-generated shim cases and EPIPE. POSIX jobs verified interruption;
+Windows terminal interruption is explicitly not asserted (existing POSIX signal
+tests are skipped there). POSIX suites passed 431 tests; Windows passed 428 with
+3 POSIX signal tests skipped, all across 16 files. Windows pending-write coverage is
+not a Unix EAGAIN claim.
+These are observed runner combinations, not universal hardware/descriptor support,
+live inference evidence or a hard real-time cleanup guarantee.
+
+Independent reviewer verified the final CI JSON/logs, exact versions/architectures,
+test counts and packed outcomes. Final evidence updates are Markdown only; formatting,
+whitespace and 146 Markdown targets across 40 files passed. No runtime rebuild or
+live call was needed for this documentation-only closeout.
 
 ## S1 verification (2026-10-25)
 

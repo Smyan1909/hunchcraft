@@ -8,7 +8,7 @@ retained TypeSafe boundary are implemented, independently reviewed and tested of
 Session/consent/identity/durable verify modules are retired. S2 CLI/bin and explicit
 production composition are implemented/reviewed offline, including one invocation-owned
 output child (ADR 0005). S3 actual packed-install/shim checks and usage docs are complete
-locally; corrected six-cell remote CI remains to be observed. No functional
+locally; corrected six-cell remote CI passed at `ad9945b`. No functional
 public API, shipped consultation skill or host adapter exists. See ADR 0004.
 
 ## Start here
@@ -75,7 +75,8 @@ upstream TypeSafe skill; put project-specific rules in our own docs and skills.
 - Keep `package-lock.json` synchronized. TypeScript is pinned to 6.0.3 for current
   typescript-eslint compatibility; check peer support before upgrading.
   `@typesafe-ai/sdk@0.6.0` is the sole runtime dependency; SDK types stay in providers.
-- Next is observing corrected six-cell remote CI, then a user-selected next milestone.
+- The accepted offline CLI milestone is complete. Next is a user-selected milestone;
+  live consultation, evaluation or publication still needs separate authorization.
   The 2026-10-25 planning retake supersedes mandatory OS ACL/root-identity,
   secure-storage and session work; historical docs are not current instructions.
 - Explicit consult authorizes disclosure of supplied input under a human-authorized

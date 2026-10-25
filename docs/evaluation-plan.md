@@ -3,7 +3,7 @@
 **Replanned 2026-10-25. No live study or measured gain exists.** The old offline
 core/application/provider suites exist at `cde4ef8`; S1/S2 stateless CLI mechanics
 are now implemented and reviewed offline. S3 actual packed-install checks pass locally;
-corrected remote platform CI remains pending. No usefulness claim follows from that.
+corrected six-cell remote platform CI passed. No usefulness claim follows from that.
 Use [system design](system-design.md) and [implementation plan](implementation-plan.md).
 The previous detailed protocol is available in Git at `cde4ef8`, not an active mandate.
 

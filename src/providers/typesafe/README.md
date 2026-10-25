@@ -103,7 +103,7 @@ calibration, secure-state platform verification, host runtime or savings measure
 was performed. The [stateless plan](../../../docs/implementation-plan.md) replaces
 mandatory secure admission with explicit consultation of supplied input. It still
 uses the reviewed S1 application migration and S2 explicit credential/transport/clock
-composition. Local packed verification passed; corrected remote platform CI and
-separately authorized live use remain outstanding. See the
+composition. Local packed verification and corrected six-cell remote platform CI
+passed. Separately authorized live use remains outstanding. See the
 [frozen handoff](../../../docs/implementation-notes/m1b-m2.md) and
 [legacy sections 8–9](../../../docs/system-design-legacy.md#8-foreground-lifecycle-provider-boundary-and-validation).
