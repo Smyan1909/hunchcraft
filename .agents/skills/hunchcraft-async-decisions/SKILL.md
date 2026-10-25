@@ -13,12 +13,14 @@ relevant. Keep decisions and observed facts separate.
 
 1. Identify one bounded judgment and its minimum sufficient evidence. Specify
    how its result can help the main agent and how to measure that benefit.
-2. Capture session, request, and source revision/fingerprint. Define exactly which
-   state changes invalidate the result, and how it expires or is superseded.
+2. Associate advice with supplied state and define which changes invalidate it.
+   The initial stateless CLI does not require persisted sessions, hashes or expiry.
+   Add session/revision ownership only when a concrete later adapter needs it.
 3. Keep independent questions over shared state together. Speculative branches
    need explicit premises; consume only applicable answers. Answers in one request
    cannot depend on other answers from that request.
-4. Set bounds for in-flight requests and waiting work. Choose replacement,
+4. Initial CLI: one invocation, one dispatch, no queue or shared cap. For a concrete
+   later background use case, set bounds for in-flight requests and waiting work. Choose replacement,
    coalescing, or dropping behavior deliberately; measure token cost as well as latency.
 5. Keep host hooks short according to the host's actual await semantics. Track
    owned background tasks and handle their rejection; `void promise` is not a strategy.
@@ -37,9 +39,10 @@ out of the decision. Avoid retrying superseded work or inventing missing evidenc
 
 ## Verify concurrency and value
 
-Use injected fakes, deferred promises, and controllable time. Test overlapping
-sessions, reversed completion order, changed revisions, cancellation, timeouts,
-queue saturation, service rejection, and disposal with late completion.
+Use injected fakes, deferred promises, and controllable time. Test independent
+invocations, changed supplied state, cancellation, timeouts, service rejection and
+disposal with late completion. Session/queue/reversed-delivery tests apply only to
+a separately scoped adapter that actually owns those mechanisms.
 
 Keep default checks offline. Compare opt-in live experiments to an unassisted
 baseline; record task outcome, decision quality, model/question version, end-to-end

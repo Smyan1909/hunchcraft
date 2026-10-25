@@ -4,13 +4,13 @@ These distilled notes preserve project conclusions as discussion progresses; the
 are not a transcript, an implementation plan, or an API specification. Update them
 when conclusions change, keeping accepted choices separate from hypotheses.
 
-**Status:** conceptual history with a reconciled, independently reviewed planning
-packet. M1a and internal M1b/M2 are implemented, reviewed and locally verified offline.
-No CLI, secure storage, production composition, shipped consultation skill, host
-adapter, background loop, evaluation runner, live inference or measured result exists.
-M1 grammar/compiler/identity remain frozen; M3 secure-state feasibility is next.
+**Status:** conceptual history. M1a and internal M1b/M2 are implemented/verified offline.
+On 2026-10-25 the user accepted stateless portable consultation and removed mandatory
+session storage/OS-specific prerequisites. [ADR 0004](decisions/0004-stateless-portable-consultation.md)
+and the current plan supersede historical session/storage and authorization wording
+below. No stateless migration, CLI, live inference or measured result exists.
 
-Read [system design](system-design.md) first for the canonical **proposed v0**
+Read [system design](system-design.md) first for the current **proposed stateless**
 contract, then [implementation plan](implementation-plan.md),
 [evaluation plan](evaluation-plan.md), and supporting
 [host](research/agent-integration.md) / [Jev/CLI](research/jev-cli.md) research.

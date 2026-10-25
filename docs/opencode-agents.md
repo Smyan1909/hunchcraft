@@ -67,19 +67,18 @@ persisted context rather than depending on this setup conversation being availab
 Read [system design](system-design.md) → [implementation plan](implementation-plan.md)
 → [evaluation plan](evaluation-plan.md) → supporting
 [host](research/agent-integration.md) and [provider](research/jev-cli.md) research.
-The packet is reconciled and independently reviewed; M1 grammar/compiler/identity are frozen;
-M1a and internal M1b/M2 are implemented and verified offline. Secure storage and
-CLI composition remain M3 work; design commands are not runnable.
+M1a and internal session-based M1b/M2 are implemented/verified offline at `cde4ef8`.
+The 2026-10-25 planning retake proposes stateless migration, then CLI composition and
+package readiness. Mandatory secure storage/ACL work is retired; design commands are
+not runnable. See [ADR 0004](decisions/0004-stateless-portable-consultation.md).
 Research is dated source inspection, not a host/runtime test or live measurement.
 
-The latest user permits offline implementation after planning todos, independent
-review/fixes, verification, and the orchestrator's planning milestone push. M1a adds
-strict brief/compiler/identity fixtures and the first Vitest behavior tests; M1b adds
-internal fake consultation, never production fake success. CLI-first consultation
-and scoped human disclosure consent are accepted direction. Protocol/check/default
-details are reviewed implementation proposals, not all user-picked
-values. No live/evaluation budget, host execution, datasets, release, or outreach is
-authorized. The orchestrator owns reviewed/verified code/docs commits and pushes.
+The current request is a planning retake; no runtime or live experiment is performed.
+Use existing bounded offline permission only after changed-contract review. Explicit
+consult authorizes supplied-input disclosure within a human-authorized workflow, not
+automatic transmission on key presence. No fake session adapter in production.
+No live/evaluation budget, host execution, datasets, release or outreach is authorized.
+Commit/push only when explicitly requested; old milestone-push instructions are historical.
 
 ## Typical chains
 

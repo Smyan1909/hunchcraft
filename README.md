@@ -2,140 +2,98 @@
 
 Fast hunches. Deliberate agents.
 
-Hunchcraft explores whether System One judgments can improve existing coding agents
-such as OpenCode, Codex, and Claude Code, through explicit consultation and automatic
-or background evaluations. The initial decision model is TypesafeAI's **Jev**, which
-returns typed judgments and probabilities, not code or generated explanations.
+Hunchcraft explores whether TypesafeAI's **Jev** judgments can help existing coding
+agents make better decisions. The agent proposes; Jev returns typed judgments and
+probabilities; the agent remains responsible for implementation and verification.
+Improved quality, lower cost and faster completion are hypotheses, not measured results.
 
-The accepted direction is **CLI-first, portable foreground consultation**, followed
-by opt-in host adapters—not a custom agent harness, host fork, or main-model
-replacement. A human must consent to a scoped session/repository before selected
-original-request material and source excerpts are shared with Jev. No first native
-host adapter has been selected or runtime-tested.
+## Direction: a small, portable CLI
 
-**Status:** the internal **M1b consultation/verification and M2 TypeSafe provider
-boundary are implemented, reviewed and locally verified: the offline M1b/M2
-milestone is complete**, building on the verified M1a core
-at `3eef99a` and frozen planning contract at `5f1af21`. Consultation uses injected
-consent, hashing, clocks and providers; M2 exercises the locked real SDK through
-fake HTTP. All M1b/M2 review findings are resolved and rechecked, including false
-cleanup acknowledgments, private-brand exceptions and timer/listener disposal faults.
-The orchestrator synchronizes reviewed code and documentation to GitHub;
-offline completion is not a CLI release or live-service validation.
+The initial product is planned as **stateless foreground consultation**:
 
-There is no functional public API, working CLI/bin, secure local-state storage,
-production composition, shipped consultation skill, host adapter, background loop,
-live inference, evaluation runner or measured improvement. Design commands remain
-unreleased, not runnable instructions.
+1. Supply a compact proposal, original request and selected evidence through stdin.
+2. Read `TYPESAFE_API_KEY` from the environment.
+3. Validate, consult once, return typed advisory output and exit.
+
+No required session setup, consent files, Windows ACL helpers, repository scan,
+background process or host adapter. The key is the only service-specific setup;
+installation, supported Node.js, valid input and provider/network access still apply.
+Target macOS/Linux/Windows on Node-supported hardware, with support claims tied to tests.
+
+Explicit `consult` invocation authorizes disclosure of the supplied material under
+documented usage. An agent must operate within a human-authorized workflow. Key
+presence alone never triggers work or grants permission to transmit arbitrary content.
+No local Hunchcraft persistence does not imply provider zero retention.
+
+## Current status
+
+**Implemented at `cde4ef8`:** M1a strict parsing/check compilation, M1b injected
+session-based consultation/verification, and M2 TypeSafe SDK boundary, all offline.
+Recorded integrated acceptance: **345 tests in 13 files**, full checks and a
+**95-file pack dry-run** on Windows/Node 24.18.1/npm 12.2.0. These are historical
+results, not tests performed by the 2026-10-25 planning retake or live-service evidence.
+
+**Not implemented:** the revised stateless contracts, working CLI/bin or production
+composition. No functional root API, shipped consultation skill, host adapter,
+live inference, evaluation runner or measured benefit exists. The old session-based
+application needs an explicit migration, not a fake consent adapter.
+
+The 2026-10-25 planning retake replaces the former secure-storage-first roadmap.
+Proposed commands are **not runnable today**. No live/evaluation budget is authorized.
 
 ## Read the plan
 
-For developers and reviewers, start here:
+- [System design](docs/system-design.md): the small proposed runtime contract.
+- [Implementation plan](docs/implementation-plan.md): three offline slices—migration,
+  CLI/composition, package readiness and usage.
+- [Evaluation plan](docs/evaluation-plan.md): optional, separately approved evidence work.
+- [Architecture](docs/architecture.md) and [ADR 0004](docs/decisions/0004-stateless-portable-consultation.md).
+- [Legacy specification](docs/system-design-legacy.md): historical implemented contracts,
+  not instructions to build persistent sessions. Earlier plans remain in Git at `cde4ef8`.
 
-1. [System design](docs/system-design.md): canonical proposed v0 command, brief,
-   checks, consent, and lifecycle contract.
-2. [Implementation plan](docs/implementation-plan.md): dependency-ordered slices,
-   review handoffs, and authorization gates.
-3. [Evaluation plan](docs/evaluation-plan.md): proposed controls and measurement;
-   no trials have run.
-4. Research: [host integration](docs/research/agent-integration.md) and
-   [Jev/CLI](docs/research/jev-cli.md), plus evaluation sources in the evaluation plan.
-   Primary documentation and source were inspected on **2026-10-11**; this is not
-   runtime compatibility or benchmark evidence.
-
-Next is **M3**: offline Windows ACL/root-identity platform feasibility
-for secure state/root identity, then secure session storage, CLI/bin composition and
-a shipped consultation skill. No production fake-success mode is provided. Offline
-M1–M3 work is authorized; schemas and limits are reviewed implementation choices,
-not values individually chosen by the user. M1b/M2 do not authorize live admission.
-Live/paid calls, datasets, host runs and releases need separate approval; no live or
-evaluation budget is authorized. Credentials are deferred to later human-managed
-environment provisioning, not pasted into chat, arguments, skills or logs.
-
-See [architecture](docs/architecture.md) for accepted boundaries and
-[design discussion](docs/design-discussion.md) for the reasoning and remaining risks.
-[ADR 0003](docs/decisions/0003-cli-first-bounded-consultation.md) records the reviewed
-CLI-first offline implementation direction, not semantic validation or live-call approval.
+Next: migrate the existing application offline under the independently reviewed stateless contract.
+Public APIs, skills, host adapters, persistence and background execution are optional,
+not prerequisites. Live calls, host trials, releases and publication need separate approval.
 
 ## Development
 
-For development, use Node.js 22.13+ on the 22.x line or Node 24.x, and npm.
-CI targets the latest releases on those two lines. The package's runtime floor is
-22.12.0; the locked development tools require 22.13.0 on Node 22. Node 26+ is allowed
-by the tooling's declared engines but is not a CI target.
+Use Node.js 22.13+ on the 22.x line or Node 24.x, and npm. The package runtime floor
+is 22.12.0. CI currently targets Node 22/24 on Linux/Windows; macOS execution evidence
+must be added before claiming tested CLI support. New-code remote CI has not been
+verified by this planning pass.
 
 ```sh
 npm ci
 npm run check
 ```
 
-| Command                     | Purpose                                                         |
-| --------------------------- | --------------------------------------------------------------- |
-| `npm run build`             | Clean and compile ESM JavaScript, declarations, and source maps |
-| `npm run typecheck`         | Check source, tests, and TypeScript configuration files         |
-| `npm run lint`              | Type-aware linting, including unhandled promise detection       |
-| `npm run lint:architecture` | Enforce dependency direction and isolation                      |
-| `npm run format`            | Format maintained source and documentation                      |
-| `npm test`                  | Run offline core, application, provider and contract tests      |
-| `npm run test:watch`        | Watch tests during development                                  |
-| `npm run check:package`     | Build and load actual ESM package exports                       |
-| `npm run check`             | Run all local quality checks                                    |
-| `npm pack --dry-run`        | Inspect the package payload without publishing                  |
+| Command                     | Purpose                                              |
+| --------------------------- | ---------------------------------------------------- |
+| `npm run build`             | Compile ESM JavaScript, declarations and source maps |
+| `npm run typecheck`         | Check source, tests and TS configuration             |
+| `npm run lint`              | Type-aware linting                                   |
+| `npm run lint:architecture` | Check dependency boundaries                          |
+| `npm run format:check`      | Check maintained file formatting                     |
+| `npm test`                  | Run offline tests                                    |
+| `npm run check:package`     | Build and load actual package exports                |
+| `npm run check`             | Run all local checks                                 |
+| `npm pack --dry-run`        | Inspect package contents without publishing          |
 
-The sole runtime dependency is **`@typesafe-ai/sdk@0.6.0`**, pinned in the manifest
-and lockfile. There are still no functional package-root exports. Meaningful offline
-Vitest tests cover core, consent, consultation/verification and real-SDK/fake-HTTP
-boundaries; the empty-suite allowance is removed. The orchestrator's integrated
-`npm run check` passed on **Windows, Node 24.18.1, npm 12.2.0**: **345 tests across
-13 files**, type/lint/architecture checks, build and actual export/declaration loading.
-`npm pack --dry-run` passed with **95 files**; dummy credentials and test fakes are
-excluded, and the SDK is a declared dependency, not bundled `node_modules`.
-No Linux or Node 22 local run, or new-code CI result, is asserted. Prior `3eef99a`
-CI success belongs to the baseline; inspect Actions after synchronization. See
-[CONTRIBUTING.md](CONTRIBUTING.md) and [the test map](tests/README.md).
+`@typesafe-ai/sdk@0.6.0` is the sole runtime dependency. TypeScript is pinned to
+6.0.3. Nothing functional is exported from the package root yet. See
+[CONTRIBUTING.md](CONTRIBUTING.md) and [test map](tests/README.md).
 
-## Project map
+`src/` separates pure core, SDK-free ports, application, providers, integrations
+and composition. Read their layer READMEs for **implemented** contracts. Default
+tests use offline fakes, never production fake success. Unknown usage/cost is not zero.
 
-```text
-src/
-  core/          Pure domain values and decision policies
-  ports/         Hunchcraft-owned interfaces for external capabilities
-  application/   Use cases and asynchronous orchestration
-  providers/     Internal TypeSafe adapter; local-state storage planned
-  integrations/  CLI and coding-agent boundaries (planned)
-  composition/   Explicit wiring and runtime entry points
-  index.ts       Reserved host-independent public API (no functional exports yet)
-tests/           Cross-module and contract tests
-scripts/         Development and package checks
-docs/            Architecture, research, and decision records
-.agents/skills/  TypeSafe guidance and focused Hunchcraft development skills
-.opencode/agents/ Project-specific orchestrator and specialists
-AGENTS.md        Short operational guidance for coding agents
-```
+## Coding-agent contributors
 
-Start with [the architecture](docs/architecture.md) and
-[the foundation decision record](docs/decisions/0001-typescript-foundation.md).
-The [foundation research notes](docs/engineering-practices.md) explain the tooling
-sources and choices. The [core](src/core/README.md), [ports](src/ports/README.md),
-[application](src/application/README.md) and [TypeSafe provider](src/providers/typesafe/README.md)
-READMEs map implemented internal modules. The [frozen M1b/M2 handoff](docs/implementation-notes/m1b-m2.md)
-records the slice contracts, not current completion evidence. Fixture-origin results
-remain distinct from `provider-http` metadata observed through fake HTTP; neither
-proves live service behavior. All raw Noul/Score signals and static feedback remain
-advisory, not action approval. Quality, cost and savings are unmeasured; unavailable
-usage/cost is unknown, not zero.
-
-## Working with coding agents
-
-Read [AGENTS.md](AGENTS.md). Skills live in `.agents/skills/`; if your agent does
-not discover them automatically, read the relevant `SKILL.md` directly. Start
-OpenCode in this directory and restart it after skill changes.
-
-OpenCode starts with the **orchestrator**, supported by developer, reviewer,
-architect, evaluator, and marketer subagents. See [the team guide](docs/opencode-agents.md)
-for usage and [shared project context](docs/agent-context.md) for where to continue.
+Read [AGENTS.md](AGENTS.md) and [shared context](docs/agent-context.md).
+Project development skills live in `.agents/skills/`. OpenCode's development
+specialists are described in [team guide](docs/opencode-agents.md); they are not
+Hunchcraft runtime agents. Commit, push or publish only when explicitly requested.
 
 ## License
 
-[MIT](LICENSE). The installed TypeSafe skill retains its upstream license and
-content; project-authored skills are maintained separately.
+[MIT](LICENSE). The upstream TypeSafe skill retains its own license and content.

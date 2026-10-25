@@ -35,9 +35,10 @@ M1b adds internal closed result and consent boundaries:
   serializers. This is not a generic schema framework or JavaScript sandbox.
 
 These modules have no package-root exports or CLI yet. They implement mechanical
-contracts from [the system design](../../docs/system-design.md), not semantic
+contracts from [the legacy system design](../../docs/system-design-legacy.md), not semantic
 judgment quality, authenticated evidence, complete requirements, or permission to
-act. M2 implements Jev transport with fake HTTP verification; concrete private
-consent storage and production composition remain M3 work. Result verification
-establishes consistency/applicability, not authenticity. Changes to
-literals/order require contract review.
+act. M2 implements Jev transport with fake HTTP verification. The
+[current stateless plan](../../docs/implementation-plan.md) retains inner grammar,
+checks and answer validation, but migrates outer input/results and retires mandatory
+consent/session/identity verification from the initial runtime. No source migration
+has occurred yet. Changes to literals/order require contract review.

@@ -1,5 +1,11 @@
 # Research: portable coding-agent integration and result delivery
 
+> Historical research and session-bound proposal, not a current work order.
+> The 2026-10-25 [stateless design](../system-design.md) and
+> [ADR 0004](../decisions/0004-stateless-portable-consultation.md) supersede mandatory
+> consent storage, durable verify, skills/adapters and related future-phase gates.
+> No host was runtime-tested. Keep the primary-source evidence, not obsolete scope.
+
 **Access date:** 2026-10-11. **Status:** primary-source research and proposed
 integration specification, not implemented behavior. **Runtime tested:** none.
 
@@ -23,7 +29,7 @@ Read alongside [architecture](../architecture.md),
 [ADR 0001](../decisions/0001-typescript-foundation.md), and
 [ADR 0002](../decisions/0002-existing-agent-extension.md). A concurrent research
 handoff records Jev/CLI evidence in [provider research](jev-cli.md). The
-[system design](../system-design.md) is now the canonical **proposed v0** command,
+[legacy system design](../system-design-legacy.md) was the **proposed v0** command,
 schema, numerical-policy and lifecycle contract. This research preserves supporting
 evidence and alternatives, not a second competing protocol. Its earlier optional
 workers/recipes are future possibilities, not features in v0.
@@ -37,7 +43,7 @@ portable discovery route. Keep the main agent, model, and runtime unchanged.
 The canonical v0 proposal uses a human-enabled scoped local consent record,
 noninteractive `consult`, offline `validate`/`verify`/`doctor`, one foreground HTTP
 attempt with no automatic retries, and no daemon or background command. Exact
-spellings, schemas, limits and review gates are in [system design](../system-design.md),
+spellings, schemas, limits and review gates were in [legacy system design](../system-design-legacy.md),
 not accepted constants inferred from this research. Session consent is a guardrail
 for cooperating same-user callers, not hostile-agent isolation or a key vault.
 
@@ -49,7 +55,7 @@ Local readiness/commit does not prove emitted success or consumption. Stored
 completion/result-expiry timestamps support bounded cross-process verification;
 only detectable clock inconsistencies are rejected. Undetectable between-process
 rollback remains a stated machine-clock-trust limitation, not a guaranteed detection.
-Exact rules live in [system design sections 4–9](../system-design.md), not a second
+Exact historical rules live in [legacy system design sections 4–9](../system-design-legacy.md), not a second
 research protocol.
 
 The smallest proposed slice is a deliberate, public component proposal that the

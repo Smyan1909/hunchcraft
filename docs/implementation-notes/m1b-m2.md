@@ -1,5 +1,10 @@
 # M1b/M2: bounded offline implementation handoff
 
+> Historical frozen handoff for source implemented at `cde4ef8`, not the current
+> next-step assignment. [ADR 0004](../decisions/0004-stateless-portable-consultation.md)
+> supersedes the M3 session/storage/ACL obligations below. Follow the
+> [stateless plan](../implementation-plan.md) for new work; do not fabricate sessions.
+
 **Date:** 2026-10-11. **Baseline inspected:** clean `3eef99a`, implementing M1a
 against planning revision `5f1af21`. The reported 98-test M1a verification is prior
 milestone evidence, not a test run performed for this note.
@@ -10,7 +15,7 @@ The latest user instruction authorizes the two source slices and M2 dependency
 operations; no further permission to begin those slices is needed. No paid/live
 Jev calls, private transmission, host launch, publication or evaluation run follows.
 
-Read the [canonical specification](../system-design.md), especially sections 4,
+Read the [historical specification](../system-design-legacy.md), especially sections 4,
 5, 8, 9 and 15, and the [implementation plan](../implementation-plan.md). This note
 selects internal implementation contracts where those documents leave details open;
 it does **not** replace the v0 protocol. M1a grammar, templates, order, bounds and
@@ -916,7 +921,7 @@ terms, finite live budgets, host execution and calibrated value remain later gat
 
 ### Sources and dependencies
 
-- [Architecture](../architecture.md), [canonical system design](../system-design.md),
+- [Architecture](../architecture.md), [historical system design](../system-design-legacy.md),
   [implementation plan](../implementation-plan.md),
   [ADR 0003](../decisions/0003-cli-first-bounded-consultation.md),
   [actual core contracts](../../src/core/README.md).

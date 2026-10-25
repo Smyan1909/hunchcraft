@@ -1,5 +1,9 @@
 # Integrations
 
+The next integration is the [planned stateless CLI](../../docs/system-design.md),
+not a native host adapter. It owns arguments, bounded stdin/stdout and exit behavior.
+No CLI is implemented yet. A shipped skill or host adapter is optional later work.
+
 Place each coding-agent adapter in its own folder, for example `opencode/`,
 `codex/`, or `claude-code/` after its supported extension surface is confirmed.
 Translate host events into observations and deliver results through supported

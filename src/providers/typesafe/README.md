@@ -98,7 +98,9 @@ All provider and consultation tests use **dummy credentials and fake HTTP functi
 `provider-http` metadata describes this boundary's observations, not a claim that a
 packet left or an attempt was charged. No authenticated provider request, semantic
 calibration, secure-state platform verification, host runtime or savings measurement
-was performed. M3 must supply reviewed secure admission and explicit credential/
-transport/clock composition before any approved live use. See the
+was performed. The [stateless plan](../../../docs/implementation-plan.md) replaces
+mandatory secure admission with explicit consultation of supplied input. It still
+requires reviewed application migration and explicit credential/transport/clock
+composition before any separately approved live use. See the
 [frozen handoff](../../../docs/implementation-notes/m1b-m2.md) and
-[canonical sections 8–9](../../../docs/system-design.md#8-foreground-lifecycle-provider-boundary-and-validation).
+[legacy sections 8–9](../../../docs/system-design-legacy.md#8-foreground-lifecycle-provider-boundary-and-validation).

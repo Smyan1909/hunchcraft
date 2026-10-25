@@ -19,7 +19,8 @@ M1b defines three internal, SDK-free ports:
   delivery-unknown must never release a newer owner's slot.
 
 M2 implements the decision-provider port through the locked SDK with injected
-transport; clock and session-consent implementations remain test-only until M3
-composition and secure storage. A hung adapter can leave a conservatively blocked
-session; bounded local return is not guaranteed reclamation.
-The [handoff](../../docs/implementation-notes/m1b-m2.md) defines M2/M3 obligations.
+transport. Concrete clock/environment wiring is still planned. The session-consent
+port describes historical M1b source, not a storage prerequisite for the new CLI.
+The [current plan](../../docs/implementation-plan.md) retires it from the stateless
+runtime and reviews the dispatch guard as invocation-local cancellation/time control.
+The [handoff](../../docs/implementation-notes/m1b-m2.md) records legacy contracts.

@@ -80,8 +80,8 @@ the inspected 95-file dry-run payload excludes this test directory and dummy key
 Known usage may survive another response failure; missing usage and cost remain
 unknown, never fabricated zero. Offline tests do not establish semantic quality,
 live service latency, cost or savings. Live inference/evaluation is not authorized.
-Next, M3 starts with offline Windows ACL/root-identity feasibility before secure
-state and CLI/skill wiring; credentials come later through human environment
-provisioning, not chat, arguments, skills or logs. Any future live experiments need
-their own approval and separate quality, whole-task latency/cost and stale/unused
-result measurements.
+Next, [stateless migration](../docs/implementation-plan.md) retains relevant safety
+regressions and replaces retired session/verify tests with invocation-local tests.
+CLI/process and packed-artifact tests follow; no mandatory ACL/storage spike or
+shipped skill. Credentials come through human environment provisioning, not chat,
+arguments, skills or logs. Live experiments remain separately approved.

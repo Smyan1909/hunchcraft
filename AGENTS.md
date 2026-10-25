@@ -2,10 +2,11 @@
 
 Hunchcraft explores LLM proposal/decomposition paired with TypesafeAI's Jev
 System One judgments for existing coding agents, not only asynchronous review.
-The TypeScript ESM repository implements M1a core, M1b internal consult/verify and
-an M2 TypeSafe boundary: the offline M1b/M2 milestone is implemented, reviewed and
-locally verified. No functional public API, CLI/bin,
-secure storage, production composition, shipped skill or host adapter exists yet.
+The accepted initial product is now a stateless, OS-independent foreground CLI
+configured through `TYPESAFE_API_KEY`. M1a core, M1b session-based consult/verify and
+M2 TypeSafe boundary are implemented/verified offline at `cde4ef8`. The revised
+stateless path, CLI/bin and production composition are not implemented. No functional
+public API, shipped consultation skill or host adapter exists. See ADR 0004.
 
 ## Start here
 
@@ -48,8 +49,9 @@ upstream TypeSafe skill; put project-specific rules in our own docs and skills.
   imports and `import type`; validate unknown external data at boundaries.
 - Importing the package must not start work or access credentials. Initialize and
   dispose explicitly. Handle all background promise rejections.
-- Async results must retain source state identity and be checked for freshness
-  before use. Bound queues/concurrency, define deadlines, and isolate sessions.
+- Results describe only supplied state; consumers discard advice after relevant
+  changes. Define deadlines and cancellation. For the initial stateless CLI, one
+  invocation has one dispatch and no queue; do not add persistent sessions or global caps.
 - Check installed types and current host docs before assuming extension support.
   A skill is guidance; background execution needs an actual runtime mechanism.
 
@@ -68,10 +70,13 @@ upstream TypeSafe skill; put project-specific rules in our own docs and skills.
 - Keep `package-lock.json` synchronized. TypeScript is pinned to 6.0.3 for current
   typescript-eslint compatibility; check peer support before upgrading.
   `@typesafe-ai/sdk@0.6.0` is the sole runtime dependency; SDK types stay in providers.
-- Next is M3 offline Windows ACL/root-identity feasibility,
-  then storage, CLI/bin and shipped consultation guidance. No live/evaluation budget
-  is authorized. Credentials belong in later human-provisioned environment values,
-  never chat/argv/skills/logs; keys and passing offline tests are not live consent.
+- Next is reviewed stateless contract/application migration, then CLI/bin and package
+  readiness. The 2026-10-25 planning retake supersedes mandatory OS ACL/root-identity,
+  secure-storage and session work; historical docs are not current instructions.
+- Explicit consult authorizes disclosure of supplied input under a human-authorized
+  workflow. Key presence never triggers scanning or inference. No live/evaluation
+  budget is authorized for development agents. Credentials belong in human-managed
+  environment values, never chat/argv/skills/logs. No required skill/host adapter.
 - Update nearby docs and add an ADR for significant design choices. Report checks
   actually run and distinguish implemented behavior from future design.
 - Commit, push, publish, or create a PR only when explicitly requested.

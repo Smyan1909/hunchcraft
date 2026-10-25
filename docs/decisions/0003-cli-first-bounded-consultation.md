@@ -1,6 +1,11 @@
 # 0003: CLI-first bounded proposal consultation
 
-Status: accepted for offline implementation
+Status: partially superseded by [ADR 0004](0004-stateless-portable-consultation.md)
+
+> Historical decision for the source implemented at `cde4ef8`. ADR 0004 replaces
+> mandatory persistent consent/storage and session-bound runtime envelopes. The
+> [current design](../system-design.md) governs new work; retained inner grammar and
+> checks come from the [legacy contract](../system-design-legacy.md).
 
 Date: 2026-10-11
 
@@ -15,7 +20,7 @@ ambiguities. No semantic model experiment or host runtime verification has occur
 
 ## Decision
 
-- Implement the reviewed [proposed v0 contract](../system-design.md) in bounded
+- Implement the reviewed [proposed v0 contract](../system-design-legacy.md) in bounded
   offline slices, following [the implementation plan](../implementation-plan.md).
   The initial slice is strict brief parsing/validation, mandatory check compilation,
   pure canonical identity representation, and meaningful offline fixtures.

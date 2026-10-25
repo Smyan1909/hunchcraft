@@ -8,6 +8,9 @@ Inject providers and I/O through ports. Keep provider SDKs, host hooks, concrete
 logging libraries, and process configuration outside this layer.
 
 M1b implements internal `consult` and `verify`; nothing is package-root exported.
+These are the legacy session-based contracts. The
+[stateless plan](../../docs/implementation-plan.md) will refactor consult and retire
+durable verify, not inject fake consent into production. That migration is not implemented.
 Caller-supplied briefs must be owned `parseBrief` results and `startedAt` must be
 captured before input work. Hashing, clocks, consent and providers are injected.
 
@@ -31,6 +34,7 @@ captured before input work. Hashing, clocks, consent and providers are injected.
 
 Wall rollback beyond one observed second fails closed. Machine clock trust remains
 necessary; unobserved host edits and small/between-process rollback can be invisible.
-Verification is not provider authentication or action authorization. M3 owns actual
-secure storage, rendering/emission and successful-close checks. Offline fakes prove
-mechanics only; no live provider or platform verification is claimed.
+Verification is not provider authentication or action authorization. Secure storage
+is no longer an initial-product prerequisite. Planned CLI work still owns bounded
+rendering/emission and successful-close checks. Offline fakes prove mechanics only;
+no live provider or platform verification is claimed.

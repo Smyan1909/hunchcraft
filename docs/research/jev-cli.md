@@ -1,5 +1,11 @@
 # Jev provider and portable CLI: research and proposed requirements
 
+> Historical research snapshot, not current implementation status or a work order.
+> M1a/M1b/M2 were subsequently implemented offline at `cde4ef8` with SDK v0.6.0.
+> The 2026-10-25 [stateless design](../system-design.md) and
+> [ADR 0004](../decisions/0004-stateless-portable-consultation.md) supersede session,
+> storage and future-phase recommendations. Recheck live docs before integrations.
+
 **Research snapshot: 2026-10-11. Status: documentation only.** No provider, CLI,
 worker, shipped consultation skill, or host integration exists in Hunchcraft.
 This document proposes requirements and a team plan; it does not accept a final
