@@ -1,8 +1,9 @@
 # Integrations
 
-The next integration is the [planned stateless CLI](../../docs/system-design.md),
-not a native host adapter. It owns arguments, bounded stdin/stdout and exit behavior.
-No CLI is implemented yet. A shipped skill or host adapter is optional later work.
+The [stateless CLI](cli/README.md) implements strict arguments, bounded input and
+injected output lifecycle. Composition confines blocking descriptor output to one
+invocation-owned, killable Node child; no provider runs there. There is no native host adapter. A shipped skill
+or host adapter is optional later work. See the [accepted design](../../docs/system-design.md).
 
 Place each coding-agent adapter in its own folder, for example `opencode/`,
 `codex/`, or `claude-code/` after its supported extension surface is confirmed.

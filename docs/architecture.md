@@ -12,7 +12,8 @@ scan or host adapter. Explicit consultation authorizes disclosure of supplied in
 within a human-authorized workflow. Key presence alone never starts work.
 
 See [system design](system-design.md), [implementation plan](implementation-plan.md)
-and [ADR 0004](decisions/0004-stateless-portable-consultation.md). The
+and [ADR 0004](decisions/0004-stateless-portable-consultation.md). Output isolation is
+recorded in [ADR 0005](decisions/0005-invocation-owned-output-process.md). The
 [legacy design](system-design-legacy.md) explains already implemented session-based
 contracts, not future requirements. ADRs [0001](decisions/0001-typescript-foundation.md)
 and [0002](decisions/0002-existing-agent-extension.md) retain the package and unchanged-host boundaries.
@@ -54,8 +55,11 @@ strict JSON, inner grammar, compiler goldens, typed answers and unchanged provid
 Consent/session/verify/root-identity modules and their obsolete tests are retired.
 The caller supplies and owns one Operation from before stdin through eventual output;
 consultation borrows it and claims at most one dispatch for its lifetime. S1 is
-independently reviewed and tested offline. CLI/bin and production composition do not
-exist yet; package-root imports still export no functional API.
+independently reviewed and tested offline. S2 adds CLI/bin and explicit Node composition,
+with lazy credential access and one invocation-owned output child. Parent code performs
+no descriptor writes; exact output acknowledgment and child exit 0 are required under
+the original Operation. Terminal diagnostics are omitted. Package-root imports still
+export no functional API. Packed-install and remaining platform evidence are S3 work.
 
 ## Runtime boundary
 

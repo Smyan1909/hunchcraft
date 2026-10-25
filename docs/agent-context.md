@@ -37,10 +37,13 @@ input/results explicitly to v1. Do not fabricate consent/session adapters for pr
 Planning milestone **`8c4b3de`** is committed/pushed; its GitHub CI passed
 ([run](https://github.com/Smyan1909/hunchcraft/actions/runs/40208042659)). S1 implements
 closed brief/result v1, policy v1, stateless consultation and a borrowed caller-owned
-Operation with one lifetime dispatch claim. Session/consent/identity/durable verify
+Operation with one lifetime dispatch claim. S1 milestone **`5b228a7`** is committed/
+pushed and its [GitHub CI](https://github.com/Smyan1909/hunchcraft/actions/runs/40209548737)
+passed. Session/consent/identity/durable verify
 modules and obsolete tests are retired. Inner grammar/compiler goldens, provider source
 and dependency pins are unchanged. S1 is independently reviewed offline, including four
-added concurrency/mutation cases. CLI/bin and production composition do not exist.
+added concurrency/mutation cases. S2 adds CLI/bin and explicit Node composition,
+independently reviewed offline. Its actual packed-install/platform acceptance remains S3.
 No functional public API, shipped skill, host adapter,
 live inference, evaluation runner or measured quality/cost/savings exists.
 
@@ -76,20 +79,36 @@ wording were corrected in the contract. Planning checks are recorded below.
 
 ## Next step
 
-Implement the CLI (S2) after saving the verified S1 milestone. Do not
+Save the verified S2 milestone, then complete packed-artifact/platform/usage work (S3). Do not
 start the retired Windows ACL/storage milestone. No credentials or host choice are
 needed for the next offline slice.
 
-S2 terminal-output policy is accepted from architect input and independent review:
-one original 15-second Operation before stdin through all-byte output acknowledgment;
+S2 initially failed real full-stdout-pipe termination: callback `fs.write` left an
+uninterruptible worker. Architect and independent reviewer approved one killable,
+invocation-owned Node output child (ADR 0005), now implemented. No parent stdout/stderr
+descriptor writes, inherited credentials/preloads, replacement output or restart.
+Original 15-second Operation spans input through exact acknowledgment and child exit 0;
 no deadline reset/additional grace. Ordinary errors emit JSON only while live. After
-deadline/cancel/invariant termination, start no stdout, attempt nonblocking sanitized
-stderr without awaiting it, dispose and terminate. After any stdout attempt, never
-append a replacement envelope. Live output fault exits 1; deadline/interruption exits
-5/130. Callback descriptor writes handle short writes and checkpoint after completion;
-late callbacks cannot restart output. Controlled exit belongs only to executable
-termination. Existing provider owns its <=1-second cleanup grace. Implementation and
-blocked-pipe/platform verification remain S2/S3 work, not proven portability.
+deadline/cancel/invariant termination, kill/disconnect live output child, dispose and
+terminate without awaiting child exit. Terminal stderr is deliberately omitted.
+Live output fault exits 1; deadline/interruption exits 5/130. Provider alone owns its
+<=1-second cleanup grace. Failed kill/abrupt parent death/hard-real-time reclamation
+are not guaranteed. Remaining platform/packed verification belongs to S3.
+
+## S2 verification (2026-10-25)
+
+Developer and independent reviewer full `npm run check` passed **429 tests/16 files**
+on macOS/Node 24.22.1/npm 11.17.0, including real blocked stdin/stdout/stderr,
+interruption, EPIPE, short/partial writes, IPC faults, child reaping and preload exclusion.
+Pack dry-run passed **116 files**, including the worker and excluding private helpers.
+Independent reviewer additionally delivered 256 KiB through the actual built worker,
+with exact acknowledgment and exit 0. No substantive code findings remain. Orchestrator
+final full checks passed **429 tests/16 files**, build/exports/bin help, formatting,
+types/lint/architecture and pack dry-run **116 files** on macOS/Node 24.22.1/npm
+11.17.0. Root/status docs and ADR 0005 are integrated; independent documentation
+review passed formatting/whitespace and 133 Markdown links across 39 files. Its low
+provider status clarification is corrected to reflect completed S2 composition.
+No Node 22/Windows/Linux/packed-install or S2 remote CI evidence is asserted yet.
 
 ## S1 verification (2026-10-25)
 

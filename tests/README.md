@@ -1,5 +1,37 @@
 # Tests
 
+## S2 CLI
+
+`integrations/cli/run.test.ts` uses controlled time and promises for input bounds,
+deadline/cancellation, output faults, post-acknowledgment freshness,
+late callbacks and cleanup. `composition/node.test.ts` uses the real installed SDK
+with fake HTTP to verify lazy configuration, pinned requests and one dispatch.
+Neither suite makes live requests or establishes provider usefulness.
+
+`composition/output-child.test.ts` controls spawn/send callbacks, acknowledgments,
+exit/disconnect ordering, stale events, termination, cleanup faults and fork policy.
+`composition/output-worker.test.ts` verifies strict messages, Unicode/byte bounds,
+synchronous short-write loops, acknowledgment and send-callback termination.
+
+`integrations/cli/process.test.ts` compiles the executable and spawns it offline
+for help, validation, missing key, invalid bytes/arguments, CRLF/Unicode, cwd paths,
+EPIPE, output interruption, real child reaping, preload exclusion and real 15-second
+blocked-input/output/stderr cases. It copies built CLI/worker files into a path with
+spaces and Unicode. The private
+`helpers/cli-process.mjs` is not packaged. Signal readiness is event-controlled;
+Windows signal emulation does not establish terminal Ctrl+C behavior.
+
+The original real blocked-output regression remains enabled with its 15-second
+Operation and 22-second watchdog unchanged. Its pipe filler runs in a separate
+process, receives no credentials, and is killed during cleanup. Parent descriptor
+writes are replaced by the approved invocation-owned output child. Blocking stderr
+must not trigger diagnostic output or a new child. Do not count injected callbacks
+as platform verification; Windows/Linux and the packed-install matrix remain S3 work.
+
+Controlled composition coverage also checks timer-disposal faults. Composition
+observes its own clock cleanup and surfaces failure despite the borrowed Operation's
+void disposal contract.
+
 Default behavior/regression suites are offline. They use test-only fixture providers
 or the real locked `@typesafe-ai/sdk@0.6.0` with dummy keys and injected fake HTTP.
 There is no runtime fake-success mode, live model call or host launch. Run

@@ -5,8 +5,9 @@ System One judgments for existing coding agents, not only asynchronous review.
 The accepted initial product is now a stateless, OS-independent foreground CLI
 configured through `TYPESAFE_API_KEY`. S1 stateless v1 contracts/application and the
 retained TypeSafe boundary are implemented, independently reviewed and tested offline.
-Session/consent/identity/durable verify modules are retired. CLI/bin and production
-composition are not implemented. No functional
+Session/consent/identity/durable verify modules are retired. S2 CLI/bin and explicit
+production composition are implemented/reviewed offline, including one invocation-owned
+output child (ADR 0005). No functional
 public API, shipped consultation skill or host adapter exists. See ADR 0004.
 
 ## Start here
@@ -62,16 +63,17 @@ upstream TypeSafe skill; put project-specific rules in our own docs and skills.
   run `npm run format:check` and check paths and instructions.
 - Add meaningful tests for behavior and regressions; default tests are offline.
   Core, application and real-SDK/fake-HTTP contract suites exist;
-  `passWithNoTests` is removed. S1 developer full checks passed 334 tests/11 files
-  on macOS/Node 24.22.1; independent review accepted S1 and rechecked the four added
-  concurrency/mutation cases (38 targeted tests). See shared context for final
+  `passWithNoTests` is removed. S2 developer and independent reviewer full checks
+  passed 429 tests/16 files on macOS/Node 24.22.1, including real blocked-pipe tests.
+  Pack dry-run has 116 files including the output worker, excluding test helpers.
+  See shared context for final
   orchestrator and remote evidence. Offline checks do not establish live usefulness.
 - For package/export changes, inspect `npm pack --dry-run` as well.
 - Keep `package-lock.json` synchronized. TypeScript is pinned to 6.0.3 for current
   typescript-eslint compatibility; check peer support before upgrading.
   `@typesafe-ai/sdk@0.6.0` is the sole runtime dependency; SDK types stay in providers.
-- Next is CLI/bin and package
-  readiness. The 2026-10-25 planning retake supersedes mandatory OS ACL/root-identity,
+- Next is packed-artifact/platform verification and usage documentation (S3).
+  The 2026-10-25 planning retake supersedes mandatory OS ACL/root-identity,
   secure-storage and session work; historical docs are not current instructions.
 - Explicit consult authorizes disclosure of supplied input under a human-authorized
   workflow. Key presence never triggers scanning or inference. No live/evaluation

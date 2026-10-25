@@ -1,10 +1,10 @@
 # System design: stateless portable consultation
 
-**Revised 2026-10-25. S1 contracts/application implemented; CLI not implemented or released.** The user accepted
+**Revised 2026-10-25. S1/S2 implemented and reviewed offline; not released.** The user accepted
 a stateless CLI with an environment-provisioned key and requested a simpler plan.
 [ADR 0004](decisions/0004-stateless-portable-consultation.md) records that decision.
-The CLI behavior below is the accepted S2 contract, not live-call
-authorization or a claim that commands work today.
+The behavior below is the implemented S1/S2 contract, not live-call authorization
+or proof of packaged installation, all-platform support or semantic usefulness.
 
 ## 1. Purpose and boundary
 
@@ -17,7 +17,7 @@ installed CLI, supported Node.js, valid input, network access and a usable provi
 account. Target macOS, Linux and Windows on hardware supported by Node.js. Test actual
 platforms before claiming support. This is not offline inference or universal hardware support.
 
-## 2. Proposed CLI
+## 2. CLI
 
 ```text
 hunchcraft --help
@@ -25,7 +25,8 @@ hunchcraft validate < brief.json
 hunchcraft consult < brief.json
 ```
 
-These are proposed commands, not installation or runnable usage instructions.
+These commands are implemented. Actual packed installation and usage documentation
+are the remaining S3 milestone.
 
 | Command    | Behavior                                                         | Credentials/network                    |
 | ---------- | ---------------------------------------------------------------- | -------------------------------------- |
@@ -37,7 +38,8 @@ Read one bounded JSON document from stdin, ending at EOF. Do not accept source o
 in arguments. Reject unknown commands/options and extra positional arguments. No file
 flags, repo configuration, initialization wizard or interactive prompt is required.
 Use JSON stdout for validation, judgment or sanitized failure results. Help is text.
-Diagnostics use stderr and never include input, credentials, SDK prose or stacks.
+Terminal stderr diagnostics are deliberately omitted: inherited stderr can block too.
+Failures never include input, credentials, SDK prose or stacks.
 Terminal lifetime failures are an exception: stdout may be empty or incomplete.
 Only consume output after a successful process close and complete JSON validation.
 
@@ -103,19 +105,22 @@ blocked output pipe. Observe rejected/late promises and suppress late success.
 One caller-owned Operation spans input through output; consultation borrows it and
 does not reset the deadline or dispose it. Ordinary failure JSON may start only while
 the original output checkpoint succeeds. After deadline, interruption or invariant
-termination, start no stdout write: attempt a fixed sanitized stderr diagnostic
-without awaiting acknowledgment, dispose and terminate with the selected exit code.
-Best-effort stderr must itself avoid synchronous blocking. No extra cleanup/output
-deadline or grace is allowed; the provider alone owns its existing at-most-one-second grace.
+termination, start no stdout delivery; dispose and terminate with the selected exit code.
+No extra cleanup/output deadline or grace is allowed; the provider alone owns its
+existing at-most-one-second grace.
 
-Fence stdout as attempted before invoking its writer. After any attempt, never emit
-a replacement envelope, even if delivered bytes are unknown. A live output failure
-exits `1`; deadline/interruption during output exits `5`/`130`. Callback-based inherited
-descriptor writes must handle short writes and acknowledge all bytes under the original
-Operation, then checkpoint again before selecting successful exit. Late callbacks
-must not restart output. Controlled process termination belongs only to the executable,
-after acknowledged ordinary output and disposal, or immediately on terminal failure.
-These mechanisms require actual blocked-pipe/platform tests; they are not a portability claim.
+Parent code never writes stdout/stderr descriptors. Fence output as attempted before
+spawning/sending to one invocation-owned Node output child. After any attempt, never
+emit a replacement envelope, even if delivered bytes are unknown. A live output failure
+exits `1`; deadline/interruption during output exits `5`/`130`. The child validates one
+bounded IPC message and handles short writes. Success requires exact byte acknowledgment,
+successful send, observed child exit 0 and a fresh original-Operation checkpoint.
+Failure kills/disconnects a live owned child without awaiting exit after termination,
+restart or additional grace. Late callbacks cannot restart output. Controlled parent
+exit belongs only to executable termination after disposal. The worker inherits no
+credentials or preloads. See [ADR 0005](decisions/0005-invocation-owned-output-process.md)
+for the failed callback-write evidence, minimal environment and reclamation limits.
+Local macOS blocked-pipe tests pass; remaining platform/packed-install tests are S3 work.
 
 Retain the existing pinned `jev-1.13.0`/`https://api.typesafe.ai` policy, SDK logging off,
 zero retries, one underlying dispatch, redirects refused and 256 KiB response cap.
@@ -198,7 +203,7 @@ action permission, and never excuses removing necessary tests or skipping verifi
 
 Buffer and validate the complete bounded output before emission; retain the 256 KiB
 output cap. If emission fails after partial bytes, do not append a replacement envelope.
-Exit nonzero and report only a sanitized stderr diagnostic where possible. Consumers
+Exit nonzero; stderr may be empty. Consumers
 wait for successful process close and validate the complete JSON before use. A write
 callback is not evidence that a host consumed the result.
 
@@ -208,7 +213,8 @@ callback is not evidence that a host consumed the result.
 - OS ACL helpers, filesystem-root identity, automatic repository discovery and secure storage.
 - Global attempt budgets, duplicate/replay suppression, caches, durable metrics and trace logs.
 - Required public library API, shipped skill, installer framework or host adapter.
-- Background workers, watch loops, MCP, model replacement and evaluation infrastructure.
+- Persistent background workers, watch loops, MCP, model replacement and evaluation infrastructure.
+  One foreground invocation owns a short-lived output child only (ADR 0005).
 
 These are not secretly required later. Reintroduce one only for a demonstrated need
 and a separate decision. Basic usage documentation belongs with the CLI milestone.
@@ -218,7 +224,8 @@ and a separate decision. Basic usage documentation belongs with the CLI mileston
 At `cde4ef8`, the old core, injected session-based consult/verify and TypeSafe provider
 were implemented and offline-tested. S1 now implements stateless application/result/input
 contracts directly and retires obsolete modules. No fake consent/reservation records
-are used. CLI/bin and production composition remain S2 work.
+are used. S2 implements CLI/bin and explicit Node composition; packed-install and
+remaining platform verification remain S3 work.
 
 The planning retake changed documentation only. The user subsequently authorized
 implementing the bounded offline slices in [implementation plan](implementation-plan.md)

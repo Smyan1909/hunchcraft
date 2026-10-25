@@ -1,6 +1,6 @@
 # Implementation plan: the smallest useful CLI
 
-**Replanned 2026-10-25. S1 implemented/reviewed offline; S2/S3 remain.**
+**Replanned 2026-10-25. S1/S2 implemented/reviewed offline; S3 remains.**
 The user requested portable, stateless consultation instead of the former persistent
 session/OS-security milestone. [ADR 0004](decisions/0004-stateless-portable-consultation.md)
 records the change. [System design](system-design.md) owns the proposed CLI contract.
@@ -58,6 +58,13 @@ independent calls require no shared state. Inert imports remain inert. Retired m
 have no production references. Run `npm run check` and independent diff review.
 
 ### S2 — portable CLI and explicit composition
+
+**Completed offline:** strict commands, bounded input/output, lazy configuration,
+bin mapping and explicit Node wiring. The original callback-write blocked-pipe test
+failed; approved invocation-owned output isolation (ADR 0005) resolves it without
+new setup or deadline/grace. Parent never writes descriptors, including stderr.
+Developer and independent reviewer full checks passed 429 tests/16 files on macOS/
+Node 24.22.1; pack dry-run 116 files. Packed installation/platform matrix remain S3.
 
 **Owner:** developer; assign exact files under `src/integrations/cli/`,
 `src/composition/`, process tests and package configuration. Serialize shared contracts.
@@ -122,7 +129,7 @@ and marketer for usage docs. Do not invoke the entire team for every slice.
 
 Independent planning review completed on 2026-10-25 with no blocking findings. The
 two low-severity corrections are incorporated: validation check count 6–16 and
-v1/in-process fixed error wording. S1 is implemented and reviewed; implement **S2**,
+v1/in-process fixed error wording. S1/S2 are implemented and reviewed; implement **S3**,
 not secure storage. No credentials
 or host selection are needed for the next offline slice. The user authorized the
 working specialist model for this session; repository agent configuration is unchanged.

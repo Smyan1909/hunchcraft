@@ -9,14 +9,15 @@ Improved quality, lower cost and faster completion are hypotheses, not measured 
 
 ## Direction: a small, portable CLI
 
-The initial product is planned as **stateless foreground consultation**:
+The initial product is **stateless foreground consultation**:
 
 1. Supply a compact proposal, original request and selected evidence through stdin.
 2. Read `TYPESAFE_API_KEY` from the environment.
 3. Validate, consult once, return typed advisory output and exit.
 
 No required session setup, consent files, Windows ACL helpers, repository scan,
-background process or host adapter. The key is the only service-specific setup;
+persistent background process or host adapter. One invocation-owned Node output child
+isolates blocked stdout without additional setup. The key is the only service-specific setup;
 installation, supported Node.js, valid input and provider/network access still apply.
 Target macOS/Linux/Windows on Node-supported hardware, with support claims tied to tests.
 
@@ -33,12 +34,19 @@ identity and durable verification modules are retired, without synthetic adapter
 Developer full offline checks passed **334 tests in 11 files** on macOS/Node 24.22.1;
 independent review accepted S1 and rechecked added concurrency/mutation tests.
 
-**Not implemented:** working CLI/bin or production composition. No functional root
-API, shipped consultation skill, host adapter, live inference, evaluation runner or
-measured benefit exists.
+**Implemented (S2):** help, stdin validation/consultation, npm bin mapping and explicit
+Node composition with lazy credentials. One killable output child keeps blocked stdout
+out of the parent; terminal stderr diagnostics are omitted. Developer and independent
+reviewer full checks passed **429 tests/16 files** on macOS/Node 24.22.1, including real
+blocked-pipe tests; pack dry-run passed with **116 files**. Actual packed-install and
+remaining platform checks are S3 work.
+
+No functional root API, shipped consultation skill, host adapter, live inference,
+evaluation runner or measured benefit exists.
 
 The 2026-10-25 planning retake replaces the former secure-storage-first roadmap.
-Proposed commands are **not runnable today**. No live/evaluation budget is authorized.
+Commands run from a built checkout; packaged installation instructions follow in S3.
+No live/evaluation budget is authorized for development agents.
 
 ## Read the plan
 
@@ -50,7 +58,7 @@ Proposed commands are **not runnable today**. No live/evaluation budget is autho
 - [Legacy specification](docs/system-design-legacy.md): historical implemented contracts,
   not instructions to build persistent sessions. Earlier plans remain in Git at `cde4ef8`.
 
-Next: implement CLI/composition under the independently reviewed terminal-output policy.
+Next: verify the actual packed artifact and document concise user setup and usage.
 Public APIs, skills, host adapters, persistence and background execution are optional,
 not prerequisites. Live calls, host trials, releases and publication need separate approval.
 
@@ -58,8 +66,8 @@ not prerequisites. Live calls, host trials, releases and publication need separa
 
 Use Node.js 22.13+ on the 22.x line or Node 24.x, and npm. The package runtime floor
 is 22.12.0. CI currently targets Node 22/24 on Linux/Windows; macOS execution evidence
-must be added before claiming tested CLI support. Planning milestone `8c4b3de` passed
-remote CI; this is not evidence for the subsequent S1 source or future CLI.
+includes local Node 24 process tests. S1 milestone `5b228a7` passed remote CI; this is
+not evidence for the subsequent S2 source or all descriptor/platform combinations.
 
 ```sh
 npm ci
