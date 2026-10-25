@@ -9,7 +9,7 @@ export function invalidInput(): CoreFailure {
     ok: false,
     error: Object.freeze({
       code: 'invalid_input',
-      message: 'Input does not satisfy the v0 contract.',
+      message: 'Input does not satisfy the v1 contract.',
     }),
   });
 }
@@ -19,7 +19,7 @@ export function checkBudgetExceeded(): CoreFailure {
     ok: false,
     error: Object.freeze({
       code: 'check_budget_exceeded',
-      message: 'The complete mandatory check set exceeds the v0 limit.',
+      message: 'The complete mandatory check set exceeds the v1 limit.',
     }),
   });
 }

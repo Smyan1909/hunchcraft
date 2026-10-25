@@ -7,11 +7,7 @@ import {
 } from './strict-json.js';
 import type { CoreFailure, JsonObject, JsonValue } from './strict-json.js';
 
-export const BRIEF_SCHEMA_VERSION = 'hunchcraft.brief.v0';
-export interface Context {
-  readonly goalId: string;
-  readonly proposalRevision: string;
-}
+export const BRIEF_SCHEMA_VERSION = 'hunchcraft.brief.v1';
 export interface Clarification {
   readonly id: string;
   readonly text: string;
@@ -85,9 +81,6 @@ export interface BriefState {
 }
 export interface Brief {
   readonly schemaVersion: typeof BRIEF_SCHEMA_VERSION;
-  readonly requestId: string;
-  readonly scopeId: string;
-  readonly context: Context;
   readonly brief: BriefState;
 }
 export type ParsedBrief =
@@ -413,14 +406,10 @@ export function parseBrief(input: string | Uint8Array): ParsedBrief {
   const parsed = parseStrictJson(input);
   if (!parsed.ok) return parsed;
   try {
-    const v = record(parsed.value, ['schemaVersion', 'requestId', 'scopeId', 'context', 'brief']);
+    const v = record(parsed.value, ['schemaVersion', 'brief']);
     if (v.schemaVersion !== BRIEF_SCHEMA_VERSION) throw new InvalidBrief();
-    const c = record(v.context, ['goalId', 'proposalRevision']);
     const value: Brief = Object.freeze({
       schemaVersion: BRIEF_SCHEMA_VERSION,
-      requestId: id(v.requestId),
-      scopeId: id(v.scopeId),
-      context: Object.freeze({ goalId: id(c.goalId), proposalRevision: id(c.proposalRevision) }),
       brief: buildState(v.brief),
     });
     validateReferences(value.brief);

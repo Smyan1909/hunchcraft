@@ -52,7 +52,7 @@ describe('strict JSON boundary', () => {
   ])('rejects malformed, aliased, unsafe or forbidden input %#', (input) => {
     expect(parseStrictJson(input)).toEqual({
       ok: false,
-      error: { code: 'invalid_input', message: 'Input does not satisfy the v0 contract.' },
+      error: { code: 'invalid_input', message: 'Input does not satisfy the v1 contract.' },
     });
   });
 

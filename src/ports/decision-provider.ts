@@ -4,6 +4,7 @@ import type { EvaluationMetadata, EvaluationOutcome } from '../core/result.js';
 export interface EvaluationControl {
   readonly signal: AbortSignal;
   remainingMs(): number;
+  /** Claim this invocation's single dispatch immediately before transport starts. */
   beforeDispatch(): Promise<void>;
   onProgress(value: unknown): void;
 }

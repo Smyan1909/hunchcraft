@@ -5,7 +5,7 @@
 environment reader, private storage, production composition or live authorization.
 The caller must supply lazy asynchronous configuration, fetch and a clock; there
 are no global-fetch or real-clock defaults. Import and factory creation do not
-construct a client or read credentials. Each admitted evaluation constructs its own
+construct a client or read credentials. Each explicit evaluation constructs its own
 client, sends at most one request and disposes its owned waits/listeners/readers.
 
 - `configuration.ts` validates a selected unknown snapshot with exactly four own
@@ -14,8 +14,9 @@ client, sends at most one request and disposes its owned waits/listeners/readers
   model overrides fail without echo. Logging is forced off; an ignored nonblank
   override is represented only by a boolean, with no diagnostic output here.
 - `provider.ts` translates owned M1a state/questions into fresh SDK-compatible
-  mutable JSON containers. Local request/session/scope/context, root/salt/hash and
-  consent metadata are not transmitted. Root named SDK exports are used; no SDK
+  mutable JSON containers. Only compiled questions and supplied inner brief state
+  are transmitted; S1 input has no session/scope/context or consent metadata.
+  Root named SDK exports are used; no SDK
   type crosses into core/ports/application. Runtime core validation is mandatory,
   regardless of SDK generic answer types. Full Noul/Score distributions remain
   advisory; no filtering, generated explanation or approval certificate is added.
@@ -100,7 +101,7 @@ packet left or an attempt was charged. No authenticated provider request, semant
 calibration, secure-state platform verification, host runtime or savings measurement
 was performed. The [stateless plan](../../../docs/implementation-plan.md) replaces
 mandatory secure admission with explicit consultation of supplied input. It still
-requires reviewed application migration and explicit credential/transport/clock
-composition before any separately approved live use. See the
+uses the reviewed S1 application migration; explicit credential/transport/clock
+composition remains to be implemented before separately approved live use. See the
 [frozen handoff](../../../docs/implementation-notes/m1b-m2.md) and
 [legacy sections 8–9](../../../docs/system-design-legacy.md#8-foreground-lifecycle-provider-boundary-and-validation).

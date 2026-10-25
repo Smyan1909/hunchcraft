@@ -1,13 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { consult } from '../../src/application/consult.js';
-import { verify } from '../../src/application/verify.js';
 import { compileChecks } from '../../src/core/checks.js';
-import { completedJudgmentEnvelope } from '../../src/core/result.js';
+import { completedJudgmentEnvelope, parseResultEnvelope } from '../../src/core/result.js';
 import { validateTypeSafeConfiguration } from '../../src/providers/typesafe/configuration.js';
 import { createTypeSafeProvider } from '../../src/providers/typesafe/provider.js';
-import { deferred, flush, response, setup } from '../helpers/consultation-fakes.js';
+import { deferred, fixture, flush, response, setup } from '../helpers/consultation-fakes.js';
 
-describe('real SDK / fake HTTP through M1b consult and verify', () => {
+const configuration = () =>
+  Promise.resolve(
+    validateTypeSafeConfiguration({
+      apiKey: 'dummy',
+      baseURL: undefined,
+      defaultModel: undefined,
+      logLevel: undefined,
+    }),
+  );
+describe('real SDK / fake HTTP through stateless consult', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -15,64 +23,72 @@ describe('real SDK / fake HTTP through M1b consult and verify', () => {
     vi.useRealTimers();
   });
   it.each(['minimal6', 'csv13'] as const)(
-    'commits and verifies every %s check without output or repeat dispatch',
+    'projects every %s check with only selected state/questions transmitted',
     async (name) => {
       const s = setup(name);
-      const plan = compileChecks(s.input.brief);
-      if (!plan.ok) throw new Error('invalid plan');
-      const fakeFetch = vi.fn(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(response(plan.value)), {
-            headers: { 'x-typesafe-request-id': 'offline-only' },
-          }),
-        ),
-      );
-      const configuration = vi.fn(() => {
-        expect(s.store.admitCalls).toBe(1);
+      const compiled = compileChecks(fixture(name).brief);
+      if (!compiled.ok) throw new Error();
+      const fakeFetch = vi.fn((_url: unknown, init?: RequestInit) => {
+        expect(typeof init?.body).toBe('string');
+        if (typeof init?.body !== 'string') throw new Error('Expected SDK string body');
+        const body: unknown = JSON.parse(init.body);
+        expect(body).toEqual({
+          model: 'jev-1.13.0',
+          state: compiled.value.state,
+          questions: compiled.value.questions,
+        });
         return Promise.resolve(
-          validateTypeSafeConfiguration({
-            apiKey: 'dummy',
-            baseURL: undefined,
-            defaultModel: undefined,
-            logLevel: undefined,
+          new Response(JSON.stringify(response(compiled.value)), {
+            headers: { 'x-typesafe-request-id': 'offline-only' },
           }),
         );
       });
-      const provider = createTypeSafeProvider({ configuration, fetch: fakeFetch, clock: s.clock });
-      const outcome = await consult(s.input, { ...s.dependencies, provider });
-      expect(outcome.status).toBe('ready');
-      if (outcome.status !== 'ready') throw new Error('consultation failed');
-      expect(outcome.result.checks.map((c) => c.id)).toEqual(plan.value.checks.map((c) => c.id));
-      expect(outcome.result.provider.metadata).toEqual({
+      const config = vi.fn(configuration);
+      const provider = createTypeSafeProvider({
+        configuration: config,
+        fetch: fakeFetch,
+        clock: s.clock,
+      });
+      const o = await consult(s.input, { provider });
+      if (o.status !== 'ready') throw new Error('consultation failed');
+      expect(o.result.checks.map((c) => c.id)).toEqual(compiled.value.checks.map((c) => c.id));
+      expect(o.result.provider.metadata).toEqual({
         origin: 'provider-http',
         attempts: 1,
         requestId: 'offline-only',
         httpStatus: 200,
       });
-      expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(1);
-      expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBeNull();
-      const projection = completedJudgmentEnvelope(outcome.result);
-      if (!projection.ok) throw new Error('projection failed');
-      const admissions = s.store.admitCalls;
-      const finalizations = s.store.finalizeCalls;
-      for (const result of [
-        { format: 'internal', value: outcome.result } as const,
-        { format: 'completed-json', bytes: JSON.stringify(projection.value) } as const,
-      ]) {
-        expect(await verify({ ...s.input, result }, s.dependencies)).toMatchObject({
-          kind: 'verification',
-          status: 'applicable-to-supplied-snapshot',
-        });
-      }
+      const projection = completedJudgmentEnvelope(o.result);
+      if (!projection.ok) throw new Error();
+      expect(projection.value).toEqual({
+        schemaVersion: 'hunchcraft.result.v1',
+        kind: 'judgment',
+        status: 'completed',
+        checkSetId: 'component-outline.v0',
+        policyVersion: 'hunchcraft.policy.v1',
+        provider: {
+          name: 'typesafe',
+          sdkVersion: '0.6.0',
+          requestedModel: 'jev-1.13.0',
+          returnedModel: 'jev-1.13.0',
+          requestId: 'offline-only',
+          attempts: 1,
+          usage: { inputTokens: 120, outputTokens: 24 },
+          costEstimate: null,
+        },
+        checks: o.result.checks,
+      });
+      expect(parseResultEnvelope(JSON.stringify(projection.value))).toEqual(projection);
       expect(fakeFetch).toHaveBeenCalledTimes(1);
-      expect(configuration).toHaveBeenCalledTimes(1);
-      expect(s.store.admitCalls).toBe(admissions);
-      expect(s.store.finalizeCalls).toBe(finalizations);
-      expect(s.clock.timers.size).toBe(0);
+      expect(config).toHaveBeenCalledTimes(1);
+      expect(s.input.operation.checkpoint('output').ok).toBe(true);
+      expect(s.clock.timers.size).toBe(1);
       expect(vi.getTimerCount()).toBe(0);
+      s.input.operation.dispose();
+      expect(s.clock.timers.size).toBe(0);
     },
   );
-  it('post-admission configuration failure consumes count, dispatches zero, confirms unavailable', async () => {
+  it('missing key dispatches zero with unknown usage and no session prerequisite', async () => {
     const s = setup();
     const fakeFetch = vi.fn(() => Promise.reject(new Error('must not dispatch')));
     const provider = createTypeSafeProvider({
@@ -88,87 +104,78 @@ describe('real SDK / fake HTTP through M1b consult and verify', () => {
           }),
         ),
     });
-    expect(await consult(s.input, { ...s.dependencies, provider })).toMatchObject({
+    expect(await consult(s.input, { provider })).toMatchObject({
       status: 'error',
-      outcome: {
-        error: { code: 'missing_key' },
-        provider: { metadata: { attempts: 0 }, usage: null },
-      },
-      cleanup: { status: 'confirmed' },
+      failure: { code: 'missing_key', exitCode: 3 },
+      outcome: { provider: { attempts: 0, requestId: null, usage: null } },
     });
     expect(fakeFetch).not.toHaveBeenCalled();
-    expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(1);
-    expect(s.store.checkCalls).toBe(0);
+    expect(s.input.operation.checkpoint('output').ok).toBe(true);
+    s.input.operation.dispose();
   });
   it.each(['cancel', 'deadline'] as const)(
-    'application %s precedence retains fake HTTP count and suppresses late response',
+    '%s retains dispatch count and suppresses/observes late response',
     async (reason) => {
       const s = setup();
       const gate = deferred<Response>();
       const fakeFetch = vi.fn(() => gate.promise);
-      const provider = createTypeSafeProvider({
-        clock: s.clock,
-        fetch: fakeFetch,
-        configuration: () =>
-          Promise.resolve(
-            validateTypeSafeConfiguration({
-              apiKey: 'dummy',
-              baseURL: undefined,
-              defaultModel: undefined,
-              logLevel: undefined,
-            }),
-          ),
-      });
-      const pending = consult(s.input, { ...s.dependencies, provider });
+      const provider = createTypeSafeProvider({ clock: s.clock, fetch: fakeFetch, configuration });
+      const pending = consult(s.input, { provider });
       await flush();
       expect(fakeFetch).toHaveBeenCalledTimes(1);
       if (reason === 'cancel') s.controller.abort();
       else s.clock.advance(15000);
       expect(await pending).toMatchObject({
         status: 'error',
-        outcome: {
-          error: { code: reason === 'cancel' ? 'operation_cancelled' : 'operation_deadline' },
-          provider: { metadata: { attempts: 1 }, usage: null },
-        },
-        cleanup: { status: 'confirmed' },
+        failure: { code: reason === 'cancel' ? 'operation_cancelled' : 'operation_deadline' },
+        outcome: { provider: { attempts: 1, usage: null } },
       });
       gate.reject(new Error('PRIVATE'));
       await flush();
-      expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBeNull();
+      s.input.operation.dispose();
       expect(s.clock.timers.size).toBe(0);
     },
   );
-  it('invalid reply retains known usage in failure and terminalizes without judgment', async () => {
+  it('invalid answers retain independently known usage without a judgment or retry', async () => {
     const s = setup();
-    const provider = createTypeSafeProvider({
-      clock: s.clock,
-      fetch: () =>
-        Promise.resolve(
-          new Response(
-            '{"model":"wrong","answers":{},"usage":{"input_tokens":11,"output_tokens":2}}',
-          ),
+    const fakeFetch = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          '{"model":"wrong","answers":{},"usage":{"input_tokens":11,"output_tokens":2}}',
         ),
-      configuration: () =>
-        Promise.resolve(
-          validateTypeSafeConfiguration({
-            apiKey: 'dummy',
-            baseURL: undefined,
-            defaultModel: undefined,
-            logLevel: undefined,
-          }),
-        ),
-    });
-    expect(await consult(s.input, { ...s.dependencies, provider })).toMatchObject({
+      ),
+    );
+    const provider = createTypeSafeProvider({ clock: s.clock, fetch: fakeFetch, configuration });
+    expect(await consult(s.input, { provider })).toMatchObject({
       status: 'error',
-      outcome: {
-        error: { code: 'provider_response_contract' },
-        provider: {
-          usage: { inputTokens: 11, outputTokens: 2 },
-          metadata: { attempts: 1, httpStatus: 200 },
-        },
-      },
-      cleanup: { status: 'confirmed' },
+      failure: { code: 'provider_response_contract' },
+      outcome: { provider: { attempts: 1, usage: { inputTokens: 11, outputTokens: 2 } } },
     });
-    expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(1);
+    expect(fakeFetch).toHaveBeenCalledTimes(1);
+    s.input.operation.dispose();
+  });
+  it('elapsed input time reduces the actual SDK attempt timeout', async () => {
+    const s = setup();
+    s.clock.advance(14000);
+    const gate = deferred<Response>();
+    const fakeFetch = vi.fn(() => gate.promise);
+    const provider = createTypeSafeProvider({ clock: s.clock, fetch: fakeFetch, configuration });
+    const pending = consult(s.input, { provider });
+    await flush();
+    expect(fakeFetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    s.clock.advance(1000, false);
+    expect(await pending).toMatchObject({
+      status: 'error',
+      failure: { code: 'provider_connection' },
+      outcome: { provider: { attempts: 1, usage: null } },
+    });
+    expect(s.input.operation.checkpoint('output')).toMatchObject({
+      ok: false,
+      error: { code: 'operation_deadline' },
+    });
+    gate.reject(new Error('late'));
+    await flush();
+    s.input.operation.dispose();
   });
 });

@@ -1,40 +1,41 @@
 # Application
 
-Host-independent use cases and asynchronous orchestration. Depend on core, ports,
-and other application modules only. Own scheduling, concurrency bounds,
-cancellation, freshness checks, and the policy for consuming decisions.
+S1 implements one stateless internal consultation with explicit provider and
+Operation injection. Dependencies point inward to ports/core; there is no SDK,
+credential reader, storage, composition, CLI or public package-root API here.
 
-Inject providers and I/O through ports. Keep provider SDKs, host hooks, concrete
-logging libraries, and process configuration outside this layer.
+`consult({bytes, operation}, {provider})` strictly parses the supplied v1 document,
+compiles all checks, evaluates once, revalidates the complete outcome and returns
+either `{status:"ready",result}` or `{status:"error",failure,outcome}`. The failure
+retains internal exit classification; `outcome` is the closed sanitized v1 wire
+envelope. There is no preparation callback, admission, receipt or persistent verify.
+Production completion still requires `completedJudgmentEnvelope`; test fixtures
+cannot pass that projection. Nothing emits output in this layer.
 
-M1b implements internal `consult` and `verify`; nothing is package-root exported.
-These are the legacy session-based contracts. The
-[stateless plan](../../docs/implementation-plan.md) will refactor consult and retire
-durable verify, not inject fake consent into production. That migration is not implemented.
-Caller-supplied briefs must be owned `parseBrief` results and `startedAt` must be
-captured before input work. Hashing, clocks, consent and providers are injected.
+The caller **owns** the Operation: create it before stdin reading, borrow it for
+consultation, checkpoint immediately before consumption/output and dispose in a
+caller `finally`. Consultation never resets its 15-second deadline or disposes it,
+on success or failure. The timer and caller cancellation remain active through
+eventual output. An ordinary dependency rejection does not terminate the Operation;
+sanitized error output can use its remaining time. Cancellation, deadline, disposal
+and invariant failures invalidate further consumption. S2 must own bounded failure
+diagnostics and emission under those terminal conditions.
 
-- `operation.ts` owns one 15-second deadline callback, cancellation forwarding,
-  per-wait observers, elapsed checkpoints, first-cause failure and disposal. Losing
-  promises remain observed; late results cannot become ready.
-- `consult.ts` compiles/hashes, checks scope, admits once, guards one evaluation,
-  reconstructs every typed response, prepares private owned bytes without I/O,
-  commits exact timestamps, and rechecks consent before returning ready. Ready means
-  prepared/committed, not emitted or consumed. Failure after ambiguous admission
-  requests an owned terminal intent; possible completed writes use delivery-unknown.
-  Once a closed matching reservation confirms admission, cleanup requires a
-  persisted receipt; `not-admitted` is acceptable only for an ambiguous admission
-  whose adapter confirms it was fenced without commitment. A false receipt yields
-  unconfirmed cleanup, not a claim that an active/completed record was released.
-  Cleanup has one fresh-controller 1-second grace and reports unconfirmed persistence
-  honestly. No retry, worker, credential access, production fake or storage exists.
-- `verify.ts` reconstructs explicit internal/production-JSON format and compares full
-  current compilation, digests, session/request/root and exact stored completed pair.
-  It performs reads/hashes only, then rechecks consent/time; no inference or writes.
+`operation.ts` uses injected wall/monotonic readings, one deadline callback and
+owned wait observers. It detects observed monotonic rollback and wall rollback
+greater than one second. This is in-process fault detection, not durable freshness
+or trusted machine-time proof. `claimDispatch` is invocation-local and never resets
+if consultation is mistakenly repeated with the same Operation. There are no shared
+caps, queue, retries or global worker. Dispatch guards recheck time/cancellation;
+validated progress cannot regress, change identity/known usage, or claim dispatch
+before the guard succeeds. Closed final answers must agree with observed progress.
 
-Wall rollback beyond one observed second fails closed. Machine clock trust remains
-necessary; unobserved host edits and small/between-process rollback can be invisible.
-Verification is not provider authentication or action authorization. Secure storage
-is no longer an initial-product prerequisite. Planned CLI work still owns bounded
-rendering/emission and successful-close checks. Offline fakes prove mechanics only;
-no live provider or platform verification is claimed.
+Wait losers and late rejections are observed; late advice/progress is suppressed.
+Disposal is idempotent, attempts timer/listener removal independently and always
+aborts owned waits even when cleanup throws. No application cleanup wait or fresh
+deadline is introduced. The unchanged TypeSafe boundary owns at most one 1-second
+cleanup grace. Ignoring-abort dependencies can remain unresolved; finite local
+return is not a guarantee of remote cancellation, resource reclamation or stopped
+billing. See the [contract](../../docs/system-design.md) and
+[offline tests](../../tests/README.md). Consumer snapshot tracking and normal task
+verification remain mandatory; advice is not action permission.

@@ -34,10 +34,14 @@ input/results explicitly to v1. Do not fabricate consent/session adapters for pr
 
 ## Source status and evidence
 
-At inspected HEAD **`cde4ef8`**, M1a core, M1b session-based consult/verify and M2
-TypeSafe provider are implemented, reviewed and verified **offline**. The 2026-10-25
-retake changes planning only. Stateless envelopes/application, CLI/bin and production
-composition do not exist. No functional public API, shipped skill, host adapter,
+Planning milestone **`8c4b3de`** is committed/pushed; its GitHub CI passed
+([run](https://github.com/Smyan1909/hunchcraft/actions/runs/40208042659)). S1 implements
+closed brief/result v1, policy v1, stateless consultation and a borrowed caller-owned
+Operation with one lifetime dispatch claim. Session/consent/identity/durable verify
+modules and obsolete tests are retired. Inner grammar/compiler goldens, provider source
+and dependency pins are unchanged. S1 is independently reviewed offline, including four
+added concurrency/mutation cases. CLI/bin and production composition do not exist.
+No functional public API, shipped skill, host adapter,
 live inference, evaluation runner or measured quality/cost/savings exists.
 
 Historical orchestrator acceptance: Windows/Node 24.18.1/npm 12.2.0, `npm run check`
@@ -72,9 +76,33 @@ wording were corrected in the contract. Planning checks are recorded below.
 
 ## Next step
 
-Migrate core/application contracts offline (S1), then implement the CLI (S2). Do not
+Implement the CLI (S2) after saving the verified S1 milestone. Do not
 start the retired Windows ACL/storage milestone. No credentials or host choice are
 needed for the next offline slice.
+
+S2 terminal-output policy is accepted from architect input and independent review:
+one original 15-second Operation before stdin through all-byte output acknowledgment;
+no deadline reset/additional grace. Ordinary errors emit JSON only while live. After
+deadline/cancel/invariant termination, start no stdout, attempt nonblocking sanitized
+stderr without awaiting it, dispose and terminate. After any stdout attempt, never
+append a replacement envelope. Live output fault exits 1; deadline/interruption exits
+5/130. Callback descriptor writes handle short writes and checkpoint after completion;
+late callbacks cannot restart output. Controlled exit belongs only to executable
+termination. Existing provider owns its <=1-second cleanup grace. Implementation and
+blocked-pipe/platform verification remain S2/S3 work, not proven portability.
+
+## S1 verification (2026-10-25)
+
+Developer full supported-Node checks passed **334 tests/11 files** on macOS/Node
+24.22.1/npm 11.17.0. Independent reviewer full checks passed the initial 330-test
+S1 and pack dry-run (75 files); after four additional tests, targeted recheck passed
+38 consultation tests and resolved the optional coverage finding. No substantive
+review findings remain. Orchestrator final `npm run check` passed on macOS/Node
+24.22.1/npm 11.17.0: **334 tests/11 files**, formatting/types/lint/architecture,
+build and actual package export/declaration checks. `npm pack --dry-run` passed
+with **75 files**, excluding retired modules/test fakes. Whitespace checks and
+independent Markdown path/heading checks passed (125 links across 37 files).
+No live calls, host runs, publication or new S1 remote CI evidence is asserted here.
 
 ## Retake verification (2026-10-25)
 

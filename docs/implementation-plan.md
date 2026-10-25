@@ -1,6 +1,6 @@
 # Implementation plan: the smallest useful CLI
 
-**Replanned 2026-10-25. Planning only; stateless runtime not implemented.**
+**Replanned 2026-10-25. S1 implemented/reviewed offline; S2/S3 remain.**
 The user requested portable, stateless consultation instead of the former persistent
 session/OS-security milestone. [ADR 0004](decisions/0004-stateless-portable-consultation.md)
 records the change. [System design](system-design.md) owns the proposed CLI contract.
@@ -35,6 +35,12 @@ for deliberately retired behavior. Do not rewrite the compiler/SDK merely to cha
 
 ### S1 — stateless contract and application migration
 
+**Completed offline:** v1 envelopes/policy, borrowed invocation-wide Operation and
+direct session/consent/identity/verify retirement. Compiler goldens/provider source
+unchanged. Independent review found no substantive defects; requested concurrency
+and mutation regression hardening was added and rechecked. Developer full checks:
+334 tests/11 files on macOS/Node 24.22.1. Final milestone evidence is in shared context.
+
 **Owner:** developer after architect/reviewer contract review. Source ownership covers
 core/application/ports and their exact tests; assign filenames before editing.
 
@@ -58,7 +64,9 @@ have no production references. Run `npm run check` and independent diff review.
 
 - Implement only help, stdin validation and stdin consultation.
 - Read credentials lazily from the environment for consult; inject fetch/clock/config.
-- Implement bounded EOF/output, sanitized JSON failures, exit classes and interruption.
+- Implement bounded EOF/output, sanitized JSON failures with the terminal-lifetime
+  exception in system design, exit classes and interruption. No output deadline reset
+  or additional grace; never append a replacement envelope after any write attempt.
 - Add the emitted ESM executable and npm bin mapping; no global library API prerequisite.
 
 **Accept when:** process tests prove help/validate need no key or network, missing-key
@@ -114,6 +122,7 @@ and marketer for usage docs. Do not invoke the entire team for every slice.
 
 Independent planning review completed on 2026-10-25 with no blocking findings. The
 two low-severity corrections are incorporated: validation check count 6–16 and
-v1/in-process fixed error wording. Implement **S1**, not secure storage. No credentials
+v1/in-process fixed error wording. S1 is implemented and reviewed; implement **S2**,
+not secure storage. No credentials
 or host selection are needed for the next offline slice. The user authorized the
 working specialist model for this session; repository agent configuration is unchanged.

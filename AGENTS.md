@@ -3,9 +3,10 @@
 Hunchcraft explores LLM proposal/decomposition paired with TypesafeAI's Jev
 System One judgments for existing coding agents, not only asynchronous review.
 The accepted initial product is now a stateless, OS-independent foreground CLI
-configured through `TYPESAFE_API_KEY`. M1a core, M1b session-based consult/verify and
-M2 TypeSafe boundary are implemented/verified offline at `cde4ef8`. The revised
-stateless path, CLI/bin and production composition are not implemented. No functional
+configured through `TYPESAFE_API_KEY`. S1 stateless v1 contracts/application and the
+retained TypeSafe boundary are implemented, independently reviewed and tested offline.
+Session/consent/identity/durable verify modules are retired. CLI/bin and production
+composition are not implemented. No functional
 public API, shipped consultation skill or host adapter exists. See ADR 0004.
 
 ## Start here
@@ -60,17 +61,16 @@ upstream TypeSafe skill; put project-specific rules in our own docs and skills.
 - Run `npm run check` after code or tooling changes. For documentation-only work,
   run `npm run format:check` and check paths and instructions.
 - Add meaningful tests for behavior and regressions; default tests are offline.
-  Core, consent, application and real-SDK/fake-HTTP contract suites now exist;
-  `passWithNoTests` is removed. All M1b/M2 findings are fixed/rechecked. Orchestrator
-  `npm run check` passed: 345 tests/13 files, types/lint/architecture, build and actual
-  exports/declarations on Windows/Node 24.18.1/npm 12.2.0; `npm pack --dry-run`
-  passed with 95 files, excluding dummy keys/test fakes. No Linux/Node 22 local run
-  or new-code CI result is asserted; prior `3eef99a` CI is baseline evidence only.
+  Core, application and real-SDK/fake-HTTP contract suites exist;
+  `passWithNoTests` is removed. S1 developer full checks passed 334 tests/11 files
+  on macOS/Node 24.22.1; independent review accepted S1 and rechecked the four added
+  concurrency/mutation cases (38 targeted tests). See shared context for final
+  orchestrator and remote evidence. Offline checks do not establish live usefulness.
 - For package/export changes, inspect `npm pack --dry-run` as well.
 - Keep `package-lock.json` synchronized. TypeScript is pinned to 6.0.3 for current
   typescript-eslint compatibility; check peer support before upgrading.
   `@typesafe-ai/sdk@0.6.0` is the sole runtime dependency; SDK types stay in providers.
-- Next is reviewed stateless contract/application migration, then CLI/bin and package
+- Next is CLI/bin and package
   readiness. The 2026-10-25 planning retake supersedes mandatory OS ACL/root-identity,
   secure-storage and session work; historical docs are not current instructions.
 - Explicit consult authorizes disclosure of supplied input under a human-authorized

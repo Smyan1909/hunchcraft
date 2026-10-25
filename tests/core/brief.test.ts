@@ -12,6 +12,23 @@ function fixture(): Brief {
 }
 
 describe('closed brief validation', () => {
+  it('freezes the exact v1 outer fields and rejects the complete legacy envelope', () => {
+    const base = fixture();
+    expect(Object.keys(base)).toEqual(['schemaVersion', 'brief']);
+    expect(base.schemaVersion).toBe('hunchcraft.brief.v1');
+    expect(parseBrief(JSON.stringify({ schemaVersion: base.schemaVersion })).ok).toBe(false);
+    expect(
+      parseBrief(
+        JSON.stringify({
+          ...base,
+          schemaVersion: 'hunchcraft.brief.v0',
+          requestId: 'csv-request-1',
+          scopeId: 'csv-export',
+          context: { goalId: 'csv-goal', proposalRevision: 'proposal-1' },
+        }),
+      ).ok,
+    ).toBe(false);
+  });
   it('preserves original request/excerpts and canonical field order with frozen nested values', () => {
     const result = parseBrief(csv);
     expect(result.ok).toBe(true);
@@ -42,8 +59,12 @@ describe('closed brief validation', () => {
 
   it.each([
     csv.replace('"clarifications": [],', ''),
-    csv.replace('"schemaVersion": "hunchcraft.brief.v0"', '"schemaVersion": "other"'),
-    csv.replace('"scopeId": "csv-export"', '"scopeId": "csv-export", "sessionId": "secret"'),
+    csv.replace('"schemaVersion": "hunchcraft.brief.v1"', '"schemaVersion": "other"'),
+    csv.replace('"schemaVersion": "hunchcraft.brief.v1"', '"schemaVersion": "hunchcraft.brief.v0"'),
+    csv.replace('"brief":', '"scopeId": "csv-export", "brief":'),
+    csv.replace('"brief":', '"requestId": "old", "brief":'),
+    csv.replace('"brief":', '"context": {}, "brief":'),
+    csv.replace('"schemaVersion": "hunchcraft.brief.v1",', ''),
     csv.replace('"assumptionRefs": []', '"assumptionRefs": [], "enabled": false'),
     csv.replace('"all-rows"', '"0"'),
     csv.replace('"id": "indicator"', '"id": "serialize"'),
@@ -62,7 +83,7 @@ describe('closed brief validation', () => {
   ])('rejects malformed/schema/reference/provenance fixtures %#', (source) => {
     expect(parseBrief(source)).toEqual({
       ok: false,
-      error: { code: 'invalid_input', message: 'Input does not satisfy the v0 contract.' },
+      error: { code: 'invalid_input', message: 'Input does not satisfy the v1 contract.' },
     });
   });
 
@@ -408,13 +429,13 @@ describe('closed brief validation', () => {
       expect(new TextEncoder().encode(overMaximum).length).toBeLessThan(32 * 1024);
       expect(parseBrief(overMaximum)).toEqual({
         ok: false,
-        error: { code: 'invalid_input', message: 'Input does not satisfy the v0 contract.' },
+        error: { code: 'invalid_input', message: 'Input does not satisfy the v1 contract.' },
       });
 
       const missing = Object.fromEntries(Object.entries(state).filter(([key]) => key !== field));
       expect(parseBrief(JSON.stringify({ ...base, brief: missing }))).toEqual({
         ok: false,
-        error: { code: 'invalid_input', message: 'Input does not satisfy the v0 contract.' },
+        error: { code: 'invalid_input', message: 'Input does not satisfy the v1 contract.' },
       });
     },
   );

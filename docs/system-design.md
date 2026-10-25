@@ -1,9 +1,9 @@
 # System design: stateless portable consultation
 
-**Planning revision: 2026-10-25. Not implemented or released.** The user accepted
+**Revised 2026-10-25. S1 contracts/application implemented; CLI not implemented or released.** The user accepted
 a stateless CLI with an environment-provisioned key and requested a simpler plan.
 [ADR 0004](decisions/0004-stateless-portable-consultation.md) records that decision.
-The interfaces and limits below are proposed implementation defaults, not live-call
+The CLI behavior below is the accepted S2 contract, not live-call
 authorization or a claim that commands work today.
 
 ## 1. Purpose and boundary
@@ -38,6 +38,8 @@ in arguments. Reject unknown commands/options and extra positional arguments. No
 flags, repo configuration, initialization wizard or interactive prompt is required.
 Use JSON stdout for validation, judgment or sanitized failure results. Help is text.
 Diagnostics use stderr and never include input, credentials, SDK prose or stacks.
+Terminal lifetime failures are an exception: stdout may be empty or incomplete.
+Only consume output after a successful process close and complete JSON validation.
 
 The planned exit classes are: `0` valid/completed, `2` invalid input/arguments or check
 overflow, `3` missing/conflicting configuration, `4` provider failure, `5` deadline,
@@ -65,7 +67,7 @@ Stateless means no Hunchcraft-managed persistence, not provider zero retention.
 
 ## 4. Input and check reuse
 
-Propose a new closed outer envelope:
+S1 implements this closed outer envelope:
 
 ```text
 { "schemaVersion": "hunchcraft.brief.v1", "brief": <BriefState> }
@@ -98,6 +100,23 @@ bound through output, with at most 10 seconds for the provider attempt and a bou
 cleanup grace of at most 1 second. Never wait indefinitely for EOF, fetch, a body or a
 blocked output pipe. Observe rejected/late promises and suppress late success.
 
+One caller-owned Operation spans input through output; consultation borrows it and
+does not reset the deadline or dispose it. Ordinary failure JSON may start only while
+the original output checkpoint succeeds. After deadline, interruption or invariant
+termination, start no stdout write: attempt a fixed sanitized stderr diagnostic
+without awaiting acknowledgment, dispose and terminate with the selected exit code.
+Best-effort stderr must itself avoid synchronous blocking. No extra cleanup/output
+deadline or grace is allowed; the provider alone owns its existing at-most-one-second grace.
+
+Fence stdout as attempted before invoking its writer. After any attempt, never emit
+a replacement envelope, even if delivered bytes are unknown. A live output failure
+exits `1`; deadline/interruption during output exits `5`/`130`. Callback-based inherited
+descriptor writes must handle short writes and acknowledge all bytes under the original
+Operation, then checkpoint again before selecting successful exit. Late callbacks
+must not restart output. Controlled process termination belongs only to the executable,
+after acknowledged ordinary output and disposal, or immediately on terminal failure.
+These mechanisms require actual blocked-pipe/platform tests; they are not a portability claim.
+
 Retain the existing pinned `jev-1.13.0`/`https://api.typesafe.ai` policy, SDK logging off,
 zero retries, one underlying dispatch, redirects refused and 256 KiB response cap.
 Composition supplies explicit clock/fetch/configuration dependencies. No arbitrary
@@ -122,7 +141,7 @@ usage remains unknown, not zero. Errors never produce synthetic successful judgm
 
 ## 6. Results and use
 
-Propose these closed `hunchcraft.result.v1` variants. Angle-bracket values below are
+S1 implements these closed `hunchcraft.result.v1` variants. Angle-bracket values below are
 type placeholders, not literal JSON. No extra fields are accepted.
 
 ```text
@@ -166,8 +185,8 @@ Update fixed messages that mention v0 or stored timestamps to describe v1/in-pro
 behavior. Freeze those sanitized literals consistently in parser and result tests.
 
 Results contain no session/root binding, persisted completion receipt, TTL claim,
-raw provider error or generated explanation attributed to Jev. Review this proposed
-shape and freeze regression fixtures in S1 before wiring the CLI. Do not wrap the old
+raw provider error or generated explanation attributed to Jev. S1 freezes regression
+fixtures for these shapes before CLI wiring. Do not wrap the old
 session-bound envelope as if it were the new result.
 
 Results describe only the supplied snapshot. A hash cannot authenticate source reads
@@ -197,9 +216,9 @@ and a separate decision. Basic usage documentation belongs with the CLI mileston
 ## 8. Implementation boundary and authorization
 
 At `cde4ef8`, the old core, injected session-based consult/verify and TypeSafe provider
-are implemented and offline-tested. **The stateless path is not implemented.** Migrate
-the application/result/input contracts directly. Do not inject fake consent/reservation
-records into production to make the old application pass.
+were implemented and offline-tested. S1 now implements stateless application/result/input
+contracts directly and retires obsolete modules. No fake consent/reservation records
+are used. CLI/bin and production composition remain S2 work.
 
 The planning retake changed documentation only. The user subsequently authorized
 implementing the bounded offline slices in [implementation plan](implementation-plan.md)

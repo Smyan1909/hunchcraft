@@ -27,16 +27,15 @@ No local Hunchcraft persistence does not imply provider zero retention.
 
 ## Current status
 
-**Implemented at `cde4ef8`:** M1a strict parsing/check compilation, M1b injected
-session-based consultation/verification, and M2 TypeSafe SDK boundary, all offline.
-Recorded integrated acceptance: **345 tests in 13 files**, full checks and a
-**95-file pack dry-run** on Windows/Node 24.18.1/npm 12.2.0. These are historical
-results, not tests performed by the 2026-10-25 planning retake or live-service evidence.
+**Implemented (S1):** strict `brief.v1`/`result.v1` contracts, mandatory check compilation,
+stateless consultation and the retained TypeSafe SDK boundary. Session, consent,
+identity and durable verification modules are retired, without synthetic adapters.
+Developer full offline checks passed **334 tests in 11 files** on macOS/Node 24.22.1;
+independent review accepted S1 and rechecked added concurrency/mutation tests.
 
-**Not implemented:** the revised stateless contracts, working CLI/bin or production
-composition. No functional root API, shipped consultation skill, host adapter,
-live inference, evaluation runner or measured benefit exists. The old session-based
-application needs an explicit migration, not a fake consent adapter.
+**Not implemented:** working CLI/bin or production composition. No functional root
+API, shipped consultation skill, host adapter, live inference, evaluation runner or
+measured benefit exists.
 
 The 2026-10-25 planning retake replaces the former secure-storage-first roadmap.
 Proposed commands are **not runnable today**. No live/evaluation budget is authorized.
@@ -51,7 +50,7 @@ Proposed commands are **not runnable today**. No live/evaluation budget is autho
 - [Legacy specification](docs/system-design-legacy.md): historical implemented contracts,
   not instructions to build persistent sessions. Earlier plans remain in Git at `cde4ef8`.
 
-Next: migrate the existing application offline under the independently reviewed stateless contract.
+Next: implement CLI/composition under the independently reviewed terminal-output policy.
 Public APIs, skills, host adapters, persistence and background execution are optional,
 not prerequisites. Live calls, host trials, releases and publication need separate approval.
 
@@ -59,8 +58,8 @@ not prerequisites. Live calls, host trials, releases and publication need separa
 
 Use Node.js 22.13+ on the 22.x line or Node 24.x, and npm. The package runtime floor
 is 22.12.0. CI currently targets Node 22/24 on Linux/Windows; macOS execution evidence
-must be added before claiming tested CLI support. New-code remote CI has not been
-verified by this planning pass.
+must be added before claiming tested CLI support. Planning milestone `8c4b3de` passed
+remote CI; this is not evidence for the subsequent S1 source or future CLI.
 
 ```sh
 npm ci

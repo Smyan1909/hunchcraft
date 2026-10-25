@@ -7,6 +7,8 @@ export interface Operation {
   readonly signal: AbortSignal;
   remainingMs(this: void): number;
   checkpoint(stage: ErrorStage): Validation<OperationStart>;
+  /** Invocation-local exactly-once dispatch claim; never resets on another consult. */
+  claimDispatch(): Validation<OperationStart>;
   wait<T>(stage: ErrorStage, start: (signal: AbortSignal) => Promise<T>): Promise<Validation<T>>;
   fail(error: Failure): void;
   dispose(): void;
@@ -17,12 +19,15 @@ export function createOperation(
   startedAt: OperationStart,
   caller: AbortSignal,
 ): Operation {
-  numeric(startedAt.monotonicMs);
-  epoch(startedAt.wallTimeMs);
+  const start = Object.freeze({
+    monotonicMs: numeric(startedAt.monotonicMs),
+    wallTimeMs: epoch(startedAt.wallTimeMs),
+  });
   const controller = new AbortController();
-  let last = startedAt;
+  let last = start;
   let cause: Failure | null = null;
   let disposed = false;
+  let dispatchClaimed = false;
   let cancelTimer: () => void = () => {};
   const fail = (error: Failure): void => {
     if (cause || disposed) return;
@@ -40,26 +45,30 @@ export function createOperation(
         wallTimeMs: epoch(clock.wallTimeMs()),
       });
       if (current.monotonicMs < last.monotonicMs || current.wallTimeMs < last.wallTimeMs - 1000)
-        fail(failure('clock_inconsistent', stage === 'freshness' ? 'freshness' : 'internal'));
+        fail(failure('clock_inconsistent', 'internal'));
       else {
         last = current;
-        if (current.monotonicMs - startedAt.monotonicMs >= 15000)
+        if (current.monotonicMs - start.monotonicMs >= 15000)
           fail(failure('operation_deadline', stage));
       }
     } catch {
-      fail(failure('clock_inconsistent', stage === 'freshness' ? 'freshness' : 'internal'));
+      fail(failure('clock_inconsistent', 'internal'));
     }
     return cause ? { ok: false, error: cause } : valid(last);
   };
   const abort = (): void => {
     fail(failure('operation_cancelled', 'internal'));
   };
-  caller.addEventListener('abort', abort, { once: true });
+  try {
+    caller.addEventListener('abort', abort, { once: true });
+  } catch {
+    fail(failure('internal_failure', 'internal'));
+  }
   const initial = checkpoint('input');
   try {
     if (initial.ok)
       cancelTimer = clock.schedule(
-        Math.max(0, 15000 - (initial.value.monotonicMs - startedAt.monotonicMs)),
+        Math.max(0, 15000 - (initial.value.monotonicMs - start.monotonicMs)),
         () => {
           checkpoint('internal');
         },
@@ -69,7 +78,7 @@ export function createOperation(
   }
   const remainingMs = (): number => {
     const c = checkpoint('internal');
-    return c.ok ? Math.max(0, 15000 - (c.value.monotonicMs - startedAt.monotonicMs)) : 0;
+    return c.ok ? Math.max(0, 15000 - (c.value.monotonicMs - start.monotonicMs)) : 0;
   };
   const wait = <T>(
     stage: ErrorStage,
@@ -82,22 +91,31 @@ export function createOperation(
       const finish = (value: Validation<T>): void => {
         if (settled) return;
         settled = true;
-        controller.signal.removeEventListener('abort', interrupted);
+        try {
+          controller.signal.removeEventListener('abort', interrupted);
+        } catch {
+          if (value.ok) value = { ok: false, error: failure('internal_failure', 'internal') };
+          fail(failure('internal_failure', 'internal'));
+        }
         resolve(value);
       };
       const interrupted = (): void => {
         finish({ ok: false, error: cause ?? failure('internal_failure', 'internal') });
       };
-      controller.signal.addEventListener('abort', interrupted, { once: true });
       const rejected = (error: unknown): void => {
         const after = checkpoint(stage);
         if (!after.ok) finish(after);
         else {
-          fail(classifiedFailure(error) ?? failure('internal_failure', 'internal'));
-          interrupted();
+          // A dependency rejection is an outcome, not the operation's lifetime.
+          // Keep the original deadline live for emitting a sanitized error.
+          finish({
+            ok: false,
+            error: classifiedFailure(error) ?? failure('internal_failure', 'internal'),
+          });
         }
       };
       try {
+        controller.signal.addEventListener('abort', interrupted, { once: true });
         const promise = start(controller.signal);
         promise
           .then((value) => {
@@ -105,8 +123,7 @@ export function createOperation(
             finish(after.ok ? valid(value) : after);
           }, rejected)
           .catch(() => {
-            fail(failure('internal_failure', 'internal'));
-            interrupted();
+            finish({ ok: false, error: failure('internal_failure', 'internal') });
           });
       } catch (error) {
         rejected(error);
@@ -117,6 +134,16 @@ export function createOperation(
     signal: controller.signal,
     remainingMs,
     checkpoint,
+    claimDispatch: (): Validation<OperationStart> => {
+      const current = checkpoint('provider');
+      if (!current.ok) return current;
+      if (dispatchClaimed) {
+        fail(failure('internal_failure', 'internal'));
+        return { ok: false, error: cause ?? failure('internal_failure', 'internal') };
+      }
+      dispatchClaimed = true;
+      return current;
+    },
     wait,
     fail,
     dispose: (): void => {
@@ -125,9 +152,13 @@ export function createOperation(
       try {
         cancelTimer();
       } catch {
-        /* A trusted clock's disposal fault cannot leak a throw. */
+        cause ??= failure('internal_failure', 'internal');
       }
-      caller.removeEventListener('abort', abort);
+      try {
+        caller.removeEventListener('abort', abort);
+      } catch {
+        cause ??= failure('internal_failure', 'internal');
+      }
       controller.abort();
     },
   });

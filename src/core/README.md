@@ -1,44 +1,35 @@
 # Core
 
-Pure domain values and deterministic decision policies. Depend only on other core
-modules. Keep provider responses, host SDK types, I/O, environment access, and
-global mutable state outside this layer. Pass time and observed state explicitly.
+Pure parsing and decision policy, with no SDK types, I/O, credentials or startup work.
+The S1 stateless contract is implemented internally; no package-root API or CLI exists yet.
 
-M1a implements the internal, offline `hunchcraft.brief.v0` boundary:
+- `strict-json.ts` performs bounded fatal UTF-8 decoding, duplicate decoded-key
+  rejection, scalar/depth validation and exact decimal safe-integer checks.
+- `brief.ts` accepts exactly `{schemaVersion:"hunchcraft.brief.v1",brief}`.
+  Legacy v0, request/session/scope/context fields and unknown fields are rejected.
+  Inner grammar, quote/reference checks, entity/text limits and lexical locator
+  policy are retained. Frozen original request and excerpts are not normalized.
+  Evidence provenance is caller-supplied, not authenticated or a complete secret scan.
+- `checks.ts` retains literal `component-outline.v0` questions, compiler order and
+  complete bindings, with `hunchcraft.policy.v1` execution policy. Input/state/questions
+  remain capped at 48/32/16 KiB and 16 checks. Never silently trim mandatory checks.
+- `result.ts` reconstructs every Noul and Score answer, legend/distribution, usage,
+  origin and monotonic progress. It retains static feedback and exact compiled-check
+  binding. Closed `hunchcraft.result.v1` variants cover validation (6–16 checks),
+  production completion and fixed sanitized failure observations. Fixture origin
+  cannot be projected as production completion. Unknown usage/cost is not zero.
+  `parseResultEnvelope` validates wire shape, not provider authenticity.
+- `value.ts` inspects only own data properties; it rejects accessors, extra fields
+  and unexpected prototypes without invoking unknown serializers.
 
-- `strict-json.ts`: bounded fatal UTF-8 decoding, decoded-key duplicate detection,
-  scalar/depth checks and exact decimal safe-integer validation. The small numeric
-  options support later provider parsing; they do not validate provider answers.
-- `brief.ts`: closed canonical reconstruction, byte/entity bounds, reference and
-  exact quote consistency, and lexical locator policy. Returned objects/arrays are
-  frozen; source provenance is still caller-supplied, not authenticated.
-- `checks.ts`: every mandatory `component-outline.v0` question in fixed order,
-  first-occurrence bindings, shared-state projection and complete wire byte caps.
-  Pass only `parseBrief`-validated inputs. No optional baseline or silent truncation.
-- `identity.ts`: compact canonical text and separately owned UTF-8 bytes for an
-  injected hash boundary. No Node crypto, repo reads, consent or freshness claim.
+Classified exceptions retain frozen constructor-validated private-brand payloads.
+Use `classifiedFailure(unknown)`, not `instanceof` followed by reading an unknown
+exception property. Prepared delivery bytes are private copies, newline-inclusive
+and limited to 256 KiB; byte preparation alone does not validate a result envelope.
 
-M1b adds internal closed result and consent boundaries:
-
-- `result.ts`: fixed failures, all-or-nothing Noul/Score reconstruction, provenance
-  and monotonic progress checks, static feedback, full judgment/binding validation,
-  strict completed-envelope parsing/projection, and private-copy prepared bytes.
-  Fixture origin cannot be projected as a production completed envelope.
-  Classified exceptions retain frozen constructor-validated payloads; use
-  `classifiedFailure(unknown)` for private-brand-safe extraction, not `instanceof`
-  followed by reading an unknown exception property.
-- `consent.ts`: strict disclosure scopes, bounded root/session/UUID-owned admission
-  and terminal values, pure consent checks, repository-binding bytes and exact
-  completion/expiry policy. Injected observations are not filesystem authentication.
-- `value.ts`: shared narrow own-data-property inspection for the two new boundaries;
-  rejects accessors, extra fields and unexpected prototypes without invoking unknown
-  serializers. This is not a generic schema framework or JavaScript sandbox.
-
-These modules have no package-root exports or CLI yet. They implement mechanical
-contracts from [the legacy system design](../../docs/system-design-legacy.md), not semantic
-judgment quality, authenticated evidence, complete requirements, or permission to
-act. M2 implements Jev transport with fake HTTP verification. The
-[current stateless plan](../../docs/implementation-plan.md) retains inner grammar,
-checks and answer validation, but migrates outer input/results and retires mandatory
-consent/session/identity verification from the initial runtime. No source migration
-has occurred yet. Changes to literals/order require contract review.
+Consent, identity and durable freshness modules are retired under
+[ADR 0004](../../docs/decisions/0004-stateless-portable-consultation.md).
+Consumers track the supplied snapshot, discard advice after relevant changes, and
+run ordinary verification. Positive judgments do not authorize actions, certify
+correctness or justify skipping necessary tests. See the
+[stateless contract](../../docs/system-design.md).

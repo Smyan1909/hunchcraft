@@ -1,4 +1,3 @@
-import type { Brief, Context } from './brief.js';
 import type { CompiledCheck, CompiledPlan, Question } from './checks.js';
 import { CHECK_SET_ID, EXECUTION_POLICY_VERSION, REQUESTED_MODEL } from './checks.js';
 import { parseStrictJson, utf8Bytes } from './strict-json.js';
@@ -8,39 +7,27 @@ import {
   list,
   text,
   identifier,
-  hex,
   numeric,
   literal,
   oneOf,
   refs,
-  iso,
 } from './value.js';
 
 const messages = {
-  invalid_input: 'Input does not satisfy the v0 contract.',
-  check_budget_exceeded: 'The complete mandatory check set exceeds the v0 limit.',
-  consent_missing: 'No scoped session consent is available.',
-  consent_revoked: 'Scoped session consent has been revoked.',
-  consent_expired: 'Scoped session consent has expired.',
-  scope_mismatch: 'The request does not match the scoped session.',
-  session_busy: 'The session already has an active reservation.',
-  session_call_limit: 'The scoped session call limit is exhausted.',
-  request_already_admitted: 'This request identifier has already been admitted.',
+  invalid_input: 'Input does not satisfy the v1 contract.',
+  check_budget_exceeded: 'The complete mandatory check set exceeds the v1 limit.',
   missing_key: 'A TypeSafe API key is not configured.',
-  configuration_conflict: 'Provider configuration conflicts with the v0 policy.',
+  configuration_conflict: 'Provider configuration conflicts with the v1 policy.',
   provider_http: 'The provider rejected or could not serve the request.',
   provider_connection: 'The provider transport did not complete successfully.',
   provider_response_contract: 'The provider response does not satisfy the expected contract.',
-  response_too_large: 'The provider response exceeds the v0 byte limit.',
+  response_too_large: 'The provider response exceeds the v1 byte limit.',
   redirect_refused: 'Authenticated provider redirects are not allowed.',
   operation_deadline: 'Consultation did not complete before its deadline.',
-  source_mismatch: 'The result does not match the current supplied snapshot.',
-  result_expired: 'The result has expired.',
-  clock_inconsistent: 'Stored and current timing values are detectably inconsistent.',
+  clock_inconsistent: 'Observed in-process timing values are detectably inconsistent.',
   operation_cancelled: 'The operation was cancelled locally.',
-  local_io: 'A local input, output or state operation failed.',
-  secure_storage_unavailable: 'Private local session storage could not be established.',
-  output_too_large: 'The complete output exceeds the v0 byte limit.',
+  local_io: 'A local input or output operation failed.',
+  output_too_large: 'The complete output exceeds the v1 byte limit.',
   internal_failure: 'An internal contract or invariant failed.',
 } as const;
 export type ErrorCode = keyof typeof messages;
@@ -48,21 +35,19 @@ export type ErrorStage =
   | 'arguments'
   | 'input'
   | 'compile'
-  | 'consent'
   | 'configuration'
   | 'provider'
   | 'response'
-  | 'freshness'
   | 'output'
   | 'internal';
 export type ErrorStatus =
-  'invalid' | 'unavailable' | 'provider-failure' | 'timeout' | 'stale' | 'cancelled' | 'failed';
+  'invalid' | 'unavailable' | 'provider-failure' | 'timeout' | 'cancelled' | 'failed';
 export interface Failure {
   readonly code: ErrorCode;
   readonly message: string;
   readonly stage: ErrorStage;
   readonly status: ErrorStatus;
-  readonly exitCode: 1 | 2 | 3 | 4 | 5 | 6 | 130;
+  readonly exitCode: 1 | 2 | 3 | 4 | 5 | 130;
 }
 export type Validation<T> =
   Readonly<{ ok: true; value: T }> | Readonly<{ ok: false; error: Failure }>;
@@ -70,11 +55,9 @@ const stages: readonly ErrorStage[] = [
   'arguments',
   'input',
   'compile',
-  'consent',
   'configuration',
   'provider',
   'response',
-  'freshness',
   'output',
   'internal',
 ];
@@ -89,16 +72,6 @@ function classification(
     case 'check_budget_exceeded':
       if (stage !== 'compile') throw new InvalidValue();
       return ['invalid', 2];
-    case 'consent_missing':
-    case 'consent_revoked':
-    case 'consent_expired':
-    case 'scope_mismatch':
-    case 'session_busy':
-    case 'session_call_limit':
-    case 'request_already_admitted':
-    case 'secure_storage_unavailable':
-      if (stage !== 'consent') throw new InvalidValue();
-      return code === 'secure_storage_unavailable' ? ['failed', 1] : ['unavailable', 3];
     case 'missing_key':
     case 'configuration_conflict':
       if (stage !== 'configuration') throw new InvalidValue();
@@ -112,13 +85,9 @@ function classification(
     case 'response_too_large':
       if (stage !== 'response') throw new InvalidValue();
       return ['provider-failure', 4];
-    case 'source_mismatch':
-    case 'result_expired':
-      if (stage !== 'freshness') throw new InvalidValue();
-      return ['stale', 6];
     case 'clock_inconsistent':
-      if (stage !== 'freshness' && stage !== 'internal') throw new InvalidValue();
-      return stage === 'freshness' ? ['stale', 6] : ['failed', 1];
+      if (stage !== 'internal') throw new InvalidValue();
+      return ['failed', 1];
     case 'operation_cancelled':
       return ['cancelled', 130];
     case 'operation_deadline':
@@ -221,13 +190,16 @@ export type EvaluationOutcome =
   | Readonly<{ ok: true; value: EvaluationResult }>
   | Readonly<{ ok: false; error: Failure; usage: Usage | null; metadata: EvaluationMetadata }>;
 export type ErrorOutcome = Readonly<{
-  schemaVersion: 'hunchcraft.v0';
+  schemaVersion: 'hunchcraft.result.v1';
   kind: 'error';
-  status: ErrorStatus;
-  requestId: string | null;
-  sessionId: string | null;
-  error: Failure;
-  provider: Readonly<{ usage: Usage | null; metadata: EvaluationMetadata }> | null;
+  status: 'failed';
+  error: Readonly<{ code: ErrorCode; message: string }>;
+  provider: Readonly<{
+    attempts: 0 | 1;
+    requestId: string | null;
+    usage: Usage | null;
+    costEstimate: null;
+  }>;
 }>;
 function usage(value: unknown, wire = false): Usage {
   const v = record(
@@ -263,8 +235,11 @@ export function reconstructProgress(
   return boundary(
     () => {
       const v = record(value, ['metadata', 'usage']);
+      const m = metadata(v.metadata);
+      if (m.origin === 'provider-http' && m.attempts === 0 && v.usage !== null)
+        throw new InvalidValue();
       return Object.freeze({
-        metadata: metadata(v.metadata),
+        metadata: m,
         usage: v.usage === null ? null : usage(v.usage),
       });
     },
@@ -387,6 +362,8 @@ export function reconstructEvaluationOutcome(
       if (!f.ok) throw new InvalidValue();
       const m = metadata(v.metadata);
       literal(m.origin, origin);
+      if (m.origin === 'provider-http' && m.attempts === 0 && v.usage !== null)
+        throw new InvalidValue();
       return Object.freeze({
         ok: false,
         error: f.value,
@@ -471,44 +448,12 @@ export function feedbackFor(templateId: string): Validation<Feedback> {
   return f ? valid(f) : invalid('invalid_input', 'input');
 }
 export type JudgmentCheck = CompiledCheck & Readonly<{ answer: Answer; feedback: Feedback }>;
-export type SourceIdentity = Readonly<{
-  version: 'hunchcraft.identity.v0';
-  digest: string;
-  repoBinding: string;
-}>;
-export type Freshness = Readonly<{
-  status: 'requires-current-brief-check';
-  completedAt: string;
-  expiresAt: string;
-}>;
-export type Timing = Readonly<{
-  inputMs: number;
-  compileMs: number;
-  admissionMs: number;
-  providerMs: number;
-  validationMs: number;
-  totalMs: number;
-}>;
-export type Coverage = Readonly<{
-  basis: 'supplied-material-only';
-  baselineChecks: number;
-  localChecks: number;
-  requirementExtraction: 'caller-supplied-nonexhaustive';
-  evidenceAuthentication: 'caller-supplied';
-}>;
 export interface InternalJudgment {
-  readonly schemaVersion: 'hunchcraft.v0';
+  readonly schemaVersion: 'hunchcraft.result.v1';
   readonly kind: 'judgment';
   readonly status: 'completed';
-  readonly requestId: string;
-  readonly sessionId: string;
-  readonly scopeId: string;
-  readonly context: Context;
-  readonly sourceIdentity: SourceIdentity;
   readonly checkSetId: typeof CHECK_SET_ID;
   readonly policyVersion: typeof EXECUTION_POLICY_VERSION;
-  readonly freshness: Freshness;
-  readonly coverage: Coverage;
   readonly provider: Readonly<{
     name: 'typesafe';
     sdkVersion: '0.6.0';
@@ -518,7 +463,6 @@ export interface InternalJudgment {
     usage: Usage;
     costEstimate: null;
   }>;
-  readonly timing: Timing;
   readonly checks: readonly JudgmentCheck[];
 }
 export type CompletedJudgmentEnvelope = Omit<InternalJudgment, 'provider'> &
@@ -535,13 +479,8 @@ export type CompletedJudgmentEnvelope = Omit<InternalJudgment, 'provider'> &
     }>;
   }>;
 export interface JudgmentConstruction {
-  readonly input: Brief;
   readonly plan: CompiledPlan;
   readonly evaluation: EvaluationResult;
-  readonly sessionId: string;
-  readonly sourceIdentity: SourceIdentity;
-  readonly freshness: Freshness;
-  readonly timing: Timing;
 }
 function question(value: unknown): Question {
   const v = record(value, ['type', 'instructions', 'criteria']);
@@ -648,31 +587,13 @@ const rootFields = [
   'schemaVersion',
   'kind',
   'status',
-  'requestId',
-  'sessionId',
-  'scopeId',
-  'context',
-  'sourceIdentity',
   'checkSetId',
   'policyVersion',
-  'freshness',
-  'coverage',
   'provider',
-  'timing',
   'checks',
 ];
 function judgment(value: unknown): InternalJudgment {
   const v = record(value, rootFields);
-  const c = record(v.context, ['goalId', 'proposalRevision']);
-  const s = record(v.sourceIdentity, ['version', 'digest', 'repoBinding']);
-  const f = record(v.freshness, ['status', 'completedAt', 'expiresAt']);
-  const completedAt = iso(f.completedAt);
-  const expiresAt = iso(f.expiresAt);
-  if (
-    Date.parse(expiresAt) < Date.parse(completedAt) ||
-    Date.parse(expiresAt) - Date.parse(completedAt) > 60000
-  )
-    throw new InvalidValue();
   const p = record(v.provider, [
     'name',
     'sdkVersion',
@@ -681,14 +602,6 @@ function judgment(value: unknown): InternalJudgment {
     'metadata',
     'usage',
     'costEstimate',
-  ]);
-  const t = record(v.timing, [
-    'inputMs',
-    'compileMs',
-    'admissionMs',
-    'providerMs',
-    'validationMs',
-    'totalMs',
   ]);
   let index = 0;
   const checks = list(v.checks, 16, (x) => check(x, index++), 6);
@@ -703,14 +616,6 @@ function judgment(value: unknown): InternalJudgment {
     utf8Bytes(JSON.stringify(Object.fromEntries(checks.map((x) => [x.wireId, x.question])))) > 16384
   )
     throw new InvalidValue();
-  const cov = record(v.coverage, [
-    'basis',
-    'baselineChecks',
-    'localChecks',
-    'requirementExtraction',
-    'evidenceAuthentication',
-  ]);
-  const localChecks = checks.filter((x) => x.subject.kind === 'local-question').length;
   // Canonical family order and complete four-check component groups are structural,
   // even before comparison against a particular current brief.
   let cursor = 2;
@@ -785,47 +690,12 @@ function judgment(value: unknown): InternalJudgment {
     if (JSON.stringify(c.evidenceRefs) !== JSON.stringify(checks[0]?.evidenceRefs))
       throw new InvalidValue();
   }
-  literal(numeric(cov.localChecks, 2, true), localChecks);
-  literal(numeric(cov.baselineChecks, 16, true), checks.length - localChecks);
-  const timing = Object.freeze({
-    inputMs: numeric(t.inputMs, 15000),
-    compileMs: numeric(t.compileMs, 15000),
-    admissionMs: numeric(t.admissionMs, 15000),
-    providerMs: numeric(t.providerMs, 15000),
-    validationMs: numeric(t.validationMs, 15000),
-    totalMs: numeric(t.totalMs, 15000),
-  });
-  if (Object.values(timing).some((ms) => ms > timing.totalMs)) throw new InvalidValue();
   const result: InternalJudgment = Object.freeze({
-    schemaVersion: literal(v.schemaVersion, 'hunchcraft.v0'),
+    schemaVersion: literal(v.schemaVersion, 'hunchcraft.result.v1'),
     kind: literal(v.kind, 'judgment'),
     status: literal(v.status, 'completed'),
-    requestId: identifier(v.requestId),
-    sessionId: hex(v.sessionId, 32),
-    scopeId: identifier(v.scopeId),
-    context: Object.freeze({
-      goalId: identifier(c.goalId),
-      proposalRevision: identifier(c.proposalRevision),
-    }),
-    sourceIdentity: Object.freeze({
-      version: literal(s.version, 'hunchcraft.identity.v0'),
-      digest: hex(s.digest, 64),
-      repoBinding: hex(s.repoBinding, 64),
-    }),
     checkSetId: literal(v.checkSetId, CHECK_SET_ID),
     policyVersion: literal(v.policyVersion, EXECUTION_POLICY_VERSION),
-    freshness: Object.freeze({
-      status: literal(f.status, 'requires-current-brief-check'),
-      completedAt,
-      expiresAt,
-    }),
-    coverage: Object.freeze({
-      basis: literal(cov.basis, 'supplied-material-only'),
-      baselineChecks: checks.length - localChecks,
-      localChecks,
-      requirementExtraction: literal(cov.requirementExtraction, 'caller-supplied-nonexhaustive'),
-      evidenceAuthentication: literal(cov.evidenceAuthentication, 'caller-supplied'),
-    }),
     provider: Object.freeze({
       name: literal(p.name, 'typesafe'),
       sdkVersion: literal(p.sdkVersion, '0.6.0'),
@@ -835,7 +705,6 @@ function judgment(value: unknown): InternalJudgment {
       usage: usage(p.usage),
       costEstimate: literal(p.costEstimate, null),
     }),
-    timing,
     checks,
   });
   if (utf8Bytes(JSON.stringify(result)) > 256 * 1024) throw new InvalidValue();
@@ -859,26 +728,12 @@ export function createJudgment(input: JudgmentConstruction): Validation<Internal
         if (!f.ok || !a) throw new InvalidValue();
         return { ...c, answer: a, feedback: f.value };
       });
-      const localChecks = input.input.brief.localQuestions.length;
       return judgment({
-        schemaVersion: 'hunchcraft.v0',
+        schemaVersion: 'hunchcraft.result.v1',
         kind: 'judgment',
         status: 'completed',
-        requestId: input.input.requestId,
-        sessionId: input.sessionId,
-        scopeId: input.input.scopeId,
-        context: input.input.context,
-        sourceIdentity: input.sourceIdentity,
         checkSetId: CHECK_SET_ID,
         policyVersion: EXECUTION_POLICY_VERSION,
-        freshness: input.freshness,
-        coverage: {
-          basis: 'supplied-material-only',
-          baselineChecks: checks.length - localChecks,
-          localChecks,
-          requirementExtraction: 'caller-supplied-nonexhaustive',
-          evidenceAuthentication: 'caller-supplied',
-        },
         provider: {
           name: 'typesafe',
           sdkVersion: '0.6.0',
@@ -888,7 +743,6 @@ export function createJudgment(input: JudgmentConstruction): Validation<Internal
           usage: e.value.value.usage,
           costEstimate: null,
         },
-        timing: input.timing,
         checks,
       });
     },
@@ -898,26 +752,19 @@ export function createJudgment(input: JudgmentConstruction): Validation<Internal
 }
 export function validateJudgmentBinding(
   result: InternalJudgment,
-  input: Brief,
   plan: CompiledPlan,
 ): Validation<InternalJudgment> {
   const rebuilt = reconstructInternalJudgment(result);
   if (!rebuilt.ok) return rebuilt;
   const r = rebuilt.value;
-  if (
-    r.requestId !== input.requestId ||
-    r.scopeId !== input.scopeId ||
-    JSON.stringify(r.context) !== JSON.stringify(input.context) ||
-    r.checks.length !== plan.checks.length
-  )
-    return invalid('source_mismatch', 'freshness');
+  if (r.checks.length !== plan.checks.length) return invalid('internal_failure', 'internal');
   for (let i = 0; i < r.checks.length; i++) {
     const c = r.checks[i];
     const expected = plan.checks[i];
-    if (!c || !expected) return invalid('source_mismatch', 'freshness');
+    if (!c || !expected) return invalid('internal_failure', 'internal');
     const { answer: ignoredAnswer, feedback: ignoredFeedback, ...compiled } = c;
     if (JSON.stringify(compiled) !== JSON.stringify(expected))
-      return invalid('source_mismatch', 'freshness');
+      return invalid('internal_failure', 'internal');
     // Revalidation above retains answers, while association compares all compiled fields.
     void ignoredAnswer;
     void ignoredFeedback;
@@ -955,7 +802,7 @@ export function parseCompletedJudgment(input: string | Uint8Array): Validation<I
     maxDepth: 16,
     allowNumericKeys: true,
     numbers: 'finite',
-    integerKeys: ['inputTokens', 'outputTokens', 'attempts', 'baselineChecks', 'localChecks'],
+    integerKeys: ['inputTokens', 'outputTokens', 'attempts'],
   });
   if (!parsed.ok) return invalid('invalid_input', 'input');
   return boundary(
@@ -990,6 +837,120 @@ export function parseCompletedJudgment(input: string | Uint8Array): Validation<I
           costEstimate: p.costEstimate,
         },
       });
+    },
+    'invalid_input',
+    'input',
+  );
+}
+export type ValidationEnvelope = Readonly<{
+  schemaVersion: 'hunchcraft.result.v1';
+  kind: 'validation';
+  status: 'valid';
+  checkSetId: typeof CHECK_SET_ID;
+  checkCount: number;
+}>;
+export type ResultEnvelope = ValidationEnvelope | CompletedJudgmentEnvelope | ErrorOutcome;
+export function validationEnvelope(checkCount: number): Validation<ValidationEnvelope> {
+  return boundary(
+    () =>
+      Object.freeze({
+        schemaVersion: 'hunchcraft.result.v1',
+        kind: 'validation',
+        status: 'valid',
+        checkSetId: CHECK_SET_ID,
+        checkCount: numeric(checkCount, 16, true, 6),
+      }),
+    'internal_failure',
+    'internal',
+  );
+}
+function errorEnvelope(value: unknown): ErrorOutcome {
+  const v = record(value, ['schemaVersion', 'kind', 'status', 'error', 'provider']);
+  const e = record(v.error, ['code', 'message']);
+  if (typeof e.code !== 'string' || !isErrorCode(e.code)) throw new InvalidValue();
+  const p = record(v.provider, ['attempts', 'requestId', 'usage', 'costEstimate']);
+  const m = metadata({
+    origin: 'provider-http',
+    attempts: p.attempts,
+    requestId: p.requestId,
+    httpStatus: null,
+  });
+  if (m.attempts === 0 && p.usage !== null) throw new InvalidValue();
+  return Object.freeze({
+    schemaVersion: literal(v.schemaVersion, 'hunchcraft.result.v1'),
+    kind: literal(v.kind, 'error'),
+    status: literal(v.status, 'failed'),
+    error: Object.freeze({ code: e.code, message: literal(e.message, messages[e.code]) }),
+    provider: Object.freeze({
+      attempts: m.attempts,
+      requestId: m.requestId,
+      usage: p.usage === null ? null : usage(p.usage),
+      costEstimate: literal(p.costEstimate, null),
+    }),
+  });
+}
+/** Failure classification stays internal; only fixed code/message and validated observations leave. */
+export function failureEnvelope(
+  error: Failure,
+  progress: Readonly<{ metadata: EvaluationMetadata; usage: Usage | null }> | null = null,
+): Validation<ErrorOutcome> {
+  return boundary(
+    () => {
+      const f = reconstructFailure(error);
+      const p = progress === null ? null : reconstructProgress(progress);
+      if (!f.ok || (p !== null && !p.ok)) throw new InvalidValue();
+      const known = p?.ok ? p.value : null;
+      return errorEnvelope({
+        schemaVersion: 'hunchcraft.result.v1',
+        kind: 'error',
+        status: 'failed',
+        error: { code: f.value.code, message: f.value.message },
+        provider: {
+          attempts: known?.metadata.attempts ?? 0,
+          requestId: known?.metadata.requestId ?? null,
+          usage: known?.usage ?? null,
+          costEstimate: null,
+        },
+      });
+    },
+    'internal_failure',
+    'internal',
+  );
+}
+/** Strict closed v1 parsing; reconstruction is not authentication of provider origin. */
+export function parseResultEnvelope(input: string | Uint8Array): Validation<ResultEnvelope> {
+  const parsed = parseStrictJson(input, {
+    maxBytes: 256 * 1024,
+    maxDepth: 16,
+    allowNumericKeys: true,
+    numbers: 'finite',
+    integerKeys: ['inputTokens', 'outputTokens', 'attempts', 'checkCount'],
+  });
+  if (!parsed.ok) return invalid('invalid_input', 'input');
+  return boundary(
+    () => {
+      const d = Object.getOwnPropertyDescriptor(parsed.value, 'kind');
+      if (d?.value === 'error') return errorEnvelope(parsed.value);
+      if (d?.value === 'validation') {
+        const v = record(parsed.value, [
+          'schemaVersion',
+          'kind',
+          'status',
+          'checkSetId',
+          'checkCount',
+        ]);
+        literal(v.schemaVersion, 'hunchcraft.result.v1');
+        literal(v.status, 'valid');
+        literal(v.checkSetId, CHECK_SET_ID);
+        const rebuilt = validationEnvelope(numeric(v.checkCount, 16, true, 6));
+        if (!rebuilt.ok) throw new InvalidValue();
+        return rebuilt.value;
+      }
+      const rebuilt = parseCompletedJudgment(input);
+      if (!rebuilt.ok) throw new InvalidValue();
+      const projection = completedJudgmentEnvelope(rebuilt.value);
+      if (!projection.ok) throw new InvalidValue();
+      return projection.value;
     },
     'invalid_input',
     'input',

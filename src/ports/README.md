@@ -1,26 +1,18 @@
 # Ports
 
-Small interfaces required by an implemented application use case: decision
-providers, observation sources, clocks, and result sinks as needed. Depend on
-core and other ports only. Define Hunchcraft-owned contracts, not SDK aliases.
+Small SDK-free capabilities required by implemented use cases. Depend inward on
+core/ports only; inject explicitly, without a service locator or generic framework.
 
-Use constructor or function arguments for injection; no service locator or
-dependency injection framework is needed.
+- `clock.ts` supplies wall/monotonic readings and cancellable callback scheduling.
+  Scheduling must not call back synchronously; cancellation is idempotent.
+- `decision-provider.ts` supplies one evaluation over the compiled plan/state with
+  a caller Operation signal, remaining deadline, exactly-once pre-dispatch guard
+  and complete validated monotonic progress snapshots. The guard is invocation-local
+  time/cancellation/dispatch control, not session admission. Returned unions still
+  require runtime reconstruction at consumption.
 
-M1b defines three internal, SDK-free ports:
-
-- `clock.ts`: explicit wall/monotonic readings and cancellable callback scheduling.
-- `decision-provider.ts`: one evaluation with an exactly-once pre-dispatch guard,
-  operation signal/deadline and validated monotonic progress snapshots.
-- `session-consent.ts`: read, atomic admission, owned check and finalization. The
-  adapter must fence unresolved admission/completion writes by invocation UUID;
-  acknowledgment cannot mean merely that no record was visible. Admission is
-  permanently consumed, one active per session, zero waiting queue. Post-completion
-  delivery-unknown must never release a newer owner's slot.
-
-M2 implements the decision-provider port through the locked SDK with injected
-transport. Concrete clock/environment wiring is still planned. The session-consent
-port describes historical M1b source, not a storage prerequisite for the new CLI.
-The [current plan](../../docs/implementation-plan.md) retires it from the stateless
-runtime and reviews the dispatch guard as invocation-local cancellation/time control.
-The [handoff](../../docs/implementation-notes/m1b-m2.md) records legacy contracts.
+The TypeSafe adapter implements this provider contract with the locked SDK and
+injected transport. Concrete environment/fetch/clock composition follows in S2.
+The retired session-consent port has no replacement: no synthetic production
+consent, persistence, shared cap or durable verify is needed for this path.
+See [ADR 0004](../../docs/decisions/0004-stateless-portable-consultation.md).

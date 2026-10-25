@@ -1,6 +1,6 @@
 import { hasValidScalars, utf8Bytes } from './strict-json.js';
 
-/** Shared result/consent inspection: never execute an unknown accessor or serializer. */
+/** Closed result inspection: never execute an unknown accessor or serializer. */
 export class InvalidValue extends Error {}
 export function record(
   value: unknown,
@@ -62,11 +62,6 @@ export function identifier(value: unknown): string {
   if (!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(v)) throw new InvalidValue();
   return v;
 }
-export function hex(value: unknown, length: number): string {
-  const v = text(value, length);
-  if (v.length !== length || !/^[0-9a-f]+$/.test(v)) throw new InvalidValue();
-  return v;
-}
 export function numeric(
   value: unknown,
   max = Number.MAX_SAFE_INTEGER,
@@ -95,10 +90,6 @@ export function oneOf<T extends string>(value: unknown, choices: readonly T[]): 
   for (const choice of choices) if (value === choice) return choice;
   throw new InvalidValue();
 }
-export function bool(value: unknown): boolean {
-  if (typeof value !== 'boolean') throw new InvalidValue();
-  return value;
-}
 export function refs(value: unknown, max: number): readonly string[] {
   const result = list(value, max, identifier);
   if (new Set(result).size !== result.length) throw new InvalidValue();
@@ -106,12 +97,5 @@ export function refs(value: unknown, max: number): readonly string[] {
 }
 export function epoch(value: unknown): number {
   const result = numeric(value, 253402300799999, true);
-  return result;
-}
-export function iso(value: unknown): string {
-  const result = text(value, 24);
-  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(result)) throw new InvalidValue();
-  const ms = epoch(Date.parse(result));
-  if (new Date(ms).toISOString() !== result) throw new InvalidValue();
   return result;
 }

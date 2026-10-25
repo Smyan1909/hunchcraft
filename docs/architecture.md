@@ -41,7 +41,7 @@ Keep the single TypeScript ESM npm package. Relative imports use `.js` and types
 entry points must not read credentials, launch work or access the network.
 Do not add a generic session framework, service locator or interface for hypothetical use.
 
-## Implemented baseline versus planned migration
+## Implemented baseline and S1 migration
 
 At `cde4ef8`, M1a core, M1b injected session-based consultation/verification and M2
 TypeSafe provider are implemented and verified offline. See the layer READMEs and
@@ -49,12 +49,13 @@ TypeSafe provider are implemented and verified offline. See the layer READMEs an
 in 13 files, full checks and a 95-file pack dry-run on Windows/Node 24. These are
 historical observations, not live or newly measured results.
 
-The stateless v1 brief/result envelopes and CLI do **not** exist yet. Retain strict
-JSON, inner brief grammar, literal compiler policy, typed answers and provider safety.
-Refactor session-dependent application/input/result contracts rather than injecting
-synthetic consent to bypass them. Retire consent/session/verify/root-identity code
-from the initial runtime in a reviewed migration. Tests for retired behavior are
-historical, not requirements to preserve forever.
+S1 implements stateless v1 brief/result envelopes and one-shot consultation, retaining
+strict JSON, inner grammar, compiler goldens, typed answers and unchanged provider code.
+Consent/session/verify/root-identity modules and their obsolete tests are retired.
+The caller supplies and owns one Operation from before stdin through eventual output;
+consultation borrows it and claims at most one dispatch for its lifetime. S1 is
+independently reviewed and tested offline. CLI/bin and production composition do not
+exist yet; package-root imports still export no functional API.
 
 ## Runtime boundary
 

@@ -118,7 +118,7 @@ describe('pinned real SDK through exclusively fake HTTP', () => {
               }
             : {
                 value: {
-                  ...failure('consent_revoked', 'consent'),
+                  ...failure('operation_cancelled', 'provider'),
                   message: 'PRIVATE-PAYLOAD-SENTINEL',
                 },
               },
@@ -145,7 +145,7 @@ describe('pinned real SDK through exclusively fake HTTP', () => {
   it.each(['guard', 'fetch'] as const)(
     'preserves constructor-validated failure after rejected mutation from %s',
     async (source) => {
-      const constructed = new ClassifiedFailure(failure('consent_revoked', 'consent'));
+      const constructed = new ClassifiedFailure(failure('operation_cancelled', 'provider'));
       expect(Reflect.set(constructed, 'failure', { message: 'PRIVATE-MUTATION-SENTINEL' })).toBe(
         false,
       );
@@ -162,7 +162,7 @@ describe('pinned real SDK through exclusively fake HTTP', () => {
       const outcome = await s.evaluate();
       expect(outcome).toMatchObject({
         ok: false,
-        error: failure('consent_revoked', 'consent'),
+        error: failure('operation_cancelled', 'provider'),
         metadata: { attempts: source === 'guard' ? 0 : 1 },
         usage: null,
       });
@@ -422,10 +422,10 @@ describe('pinned real SDK through exclusively fake HTTP', () => {
 
   it('preserves classified guard denial through SDK wrapping', async () => {
     const s = setup();
-    s.guard.mockRejectedValue(new ClassifiedFailure(failure('consent_revoked', 'consent')));
+    s.guard.mockRejectedValue(new ClassifiedFailure(failure('operation_cancelled', 'provider')));
     expect(await s.evaluate()).toMatchObject({
       ok: false,
-      error: { code: 'consent_revoked' },
+      error: { code: 'operation_cancelled' },
       metadata: { attempts: 0 },
     });
     expect(s.fakeFetch).not.toHaveBeenCalled();

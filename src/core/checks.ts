@@ -5,7 +5,7 @@ import type { Brief, BriefState, Component } from './brief.js';
 export const CHECK_SET_ID = 'component-outline.v0';
 export const REQUESTED_MODEL = 'jev-1.13.0';
 export const ENDPOINT = 'https://api.typesafe.ai';
-export const EXECUTION_POLICY_VERSION = 'hunchcraft.policy.v0';
+export const EXECUTION_POLICY_VERSION = 'hunchcraft.policy.v1';
 
 export interface Instructions {
   readonly task: string;

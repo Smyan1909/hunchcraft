@@ -6,6 +6,10 @@ import {
   classifiedFailure,
   failure,
   parseCompletedJudgment,
+  parseResultEnvelope,
+  failureEnvelope,
+  validationEnvelope,
+  validateJudgmentBinding,
   prepareBytes,
   reconstructEvaluationOutcome,
   reconstructFailure,
@@ -269,7 +273,7 @@ describe('judgment and bytes', () => {
     expect(
       reconstructInternalJudgment({
         ...outcome.result,
-        freshness: { ...outcome.result.freshness, completedAt: '2026-10-11T12:00:00Z' },
+        freshness: { completedAt: '2026-10-11T12:00:00Z' },
       }).ok,
     ).toBe(false);
     expect(
@@ -284,9 +288,10 @@ describe('judgment and bytes', () => {
     expect(
       reconstructInternalJudgment({
         ...outcome.result,
-        timing: { ...outcome.result.timing, inputMs: -0 },
+        timing: { inputMs: -0 },
       }).ok,
     ).toBe(false);
+    s.input.operation.dispose();
   });
   it('strictly parses only production completed envelopes and detects duplicate decoded keys', async () => {
     const s = setup();
@@ -327,5 +332,260 @@ describe('judgment and bytes', () => {
         json.replace('"inputTokens":120', '"inputTokens":120.000000000000000001'),
       ).ok,
     ).toBe(false);
+    s.input.operation.dispose();
+  });
+});
+describe('closed stateless result.v1 variants', () => {
+  it.each([6, 13, 16])('roundtrips validation count %i', (count) => {
+    const result = validationEnvelope(count);
+    if (!result.ok) throw new Error();
+    expect(result.value).toEqual({
+      schemaVersion: 'hunchcraft.result.v1',
+      kind: 'validation',
+      status: 'valid',
+      checkSetId: 'component-outline.v0',
+      checkCount: count,
+    });
+    expect(parseResultEnvelope(JSON.stringify(result.value))).toEqual(result);
+  });
+  it.each([0, 5, 17, 6.1, -0, NaN, Infinity])('rejects invalid checkCount %s', (count) => {
+    expect(validationEnvelope(count).ok).toBe(false);
+    expect(
+      parseResultEnvelope(
+        JSON.stringify({
+          schemaVersion: 'hunchcraft.result.v1',
+          kind: 'validation',
+          status: 'valid',
+          checkSetId: 'component-outline.v0',
+          checkCount: count,
+        }),
+      ).ok,
+    ).toBe(false);
+  });
+  it('freezes fixed v1/in-process messages and excludes retired failures', () => {
+    expect(failure('invalid_input', 'input').message).toBe(
+      'Input does not satisfy the v1 contract.',
+    );
+    expect(failure('check_budget_exceeded', 'compile').message).toBe(
+      'The complete mandatory check set exceeds the v1 limit.',
+    );
+    expect(failure('configuration_conflict', 'configuration').message).toBe(
+      'Provider configuration conflicts with the v1 policy.',
+    );
+    expect(failure('response_too_large', 'response').message).toBe(
+      'The provider response exceeds the v1 byte limit.',
+    );
+    expect(failure('output_too_large', 'output').message).toBe(
+      'The complete output exceeds the v1 byte limit.',
+    );
+    expect(failure('clock_inconsistent', 'internal').message).toBe(
+      'Observed in-process timing values are detectably inconsistent.',
+    );
+    expect(failure('local_io', 'output').message).toBe('A local input or output operation failed.');
+    const base = failureEnvelope(failure('missing_key', 'configuration'));
+    if (!base.ok) throw new Error();
+    for (const code of [
+      'consent_missing',
+      'consent_revoked',
+      'consent_expired',
+      'scope_mismatch',
+      'session_busy',
+      'session_call_limit',
+      'request_already_admitted',
+      'secure_storage_unavailable',
+      'source_mismatch',
+      'result_expired',
+    ]) {
+      expect(
+        parseResultEnvelope(
+          JSON.stringify({ ...base.value, error: { code, message: base.value.error.message } }),
+        ).ok,
+      ).toBe(false);
+    }
+  });
+  it.each([null, { inputTokens: 11, outputTokens: 2 }])(
+    'retains dispatched failure observations with usage %j',
+    (usage) => {
+      const f = failure('provider_connection', 'provider');
+      const result = failureEnvelope(f, {
+        metadata: { origin: 'provider-http', attempts: 1, requestId: 'HTTP_1', httpStatus: 502 },
+        usage,
+      });
+      if (!result.ok) throw new Error();
+      expect(result.value).toEqual({
+        schemaVersion: 'hunchcraft.result.v1',
+        kind: 'error',
+        status: 'failed',
+        error: { code: f.code, message: f.message },
+        provider: { attempts: 1, requestId: 'HTTP_1', usage, costEstimate: null },
+      });
+      expect(parseResultEnvelope(JSON.stringify(result.value))).toEqual(result);
+    },
+  );
+  it('before-dispatch failure is zero attempts and wholly unknown usage', () => {
+    const result = failureEnvelope(failure('missing_key', 'configuration'));
+    if (!result.ok) throw new Error();
+    expect(result.value.provider).toEqual({
+      attempts: 0,
+      requestId: null,
+      usage: null,
+      costEstimate: null,
+    });
+    expect(
+      parseResultEnvelope(
+        JSON.stringify({
+          ...result.value,
+          provider: { ...result.value.provider, usage: { inputTokens: 0, outputTokens: 0 } },
+        }),
+      ).ok,
+    ).toBe(false);
+    expect(
+      parseResultEnvelope(
+        JSON.stringify({
+          ...result.value,
+          provider: { ...result.value.provider, requestId: 'id' },
+        }),
+      ).ok,
+    ).toBe(false);
+  });
+  it('rejects missing/extra fields and legacy values at every variant boundary', async () => {
+    const s = setup();
+    const o = await consult(s.input, s.dependencies);
+    if (o.status !== 'ready') throw new Error();
+    const wire = completedJudgmentEnvelope({
+      ...o.result,
+      provider: {
+        ...o.result.provider,
+        metadata: { origin: 'provider-http', attempts: 1, requestId: null, httpStatus: 200 },
+      },
+    });
+    const validation = validationEnvelope(6);
+    const error = failureEnvelope(failure('operation_deadline', 'input'));
+    if (!wire.ok || !validation.ok || !error.ok) throw new Error();
+    for (const value of [wire.value, validation.value, error.value]) {
+      const json = JSON.stringify(value);
+      expect(parseResultEnvelope(json)).toEqual({ ok: true, value });
+      for (const field of Object.keys(value)) {
+        expect(
+          parseResultEnvelope(
+            JSON.stringify(
+              Object.fromEntries(Object.entries(value).filter(([key]) => key !== field)),
+            ),
+          ).ok,
+        ).toBe(false);
+      }
+      for (const field of [
+        'extra',
+        'requestId',
+        'scopeId',
+        'context',
+        'sessionId',
+        'freshness',
+        'timing',
+        'sourceIdentity',
+        'coverage',
+      ]) {
+        expect(parseResultEnvelope(JSON.stringify({ ...value, [field]: null })).ok).toBe(false);
+      }
+      expect(
+        parseResultEnvelope(JSON.stringify({ ...value, schemaVersion: 'hunchcraft.v0' })).ok,
+      ).toBe(false);
+      expect(parseResultEnvelope(json.replace('"kind":', '"kind":"error","kind":')).ok).toBe(false);
+      for (const [name, rawNested] of Object.entries(value)) {
+        const nested: unknown = rawNested;
+        if (nested === null || typeof nested !== 'object' || Array.isArray(nested)) continue;
+        expect(
+          parseResultEnvelope(JSON.stringify({ ...value, [name]: { ...nested, extra: true } })).ok,
+        ).toBe(false);
+        for (const field of Object.keys(nested)) {
+          const entries: [string, unknown][] = Object.entries(nested);
+          expect(
+            parseResultEnvelope(
+              JSON.stringify({
+                ...value,
+                [name]: Object.fromEntries(entries.filter(([key]) => key !== field)),
+              }),
+            ).ok,
+          ).toBe(false);
+        }
+      }
+    }
+    expect(
+      parseResultEnvelope(
+        JSON.stringify({
+          ...error.value,
+          error: { code: 'operation_deadline', message: 'secret' },
+        }),
+      ).ok,
+    ).toBe(false);
+    expect(
+      parseResultEnvelope(JSON.stringify({ ...wire.value, policyVersion: 'hunchcraft.policy.v0' }))
+        .ok,
+    ).toBe(false);
+    expect(
+      parseResultEnvelope(
+        JSON.stringify({ ...wire.value, provider: { ...wire.value.provider, attempts: 0 } }),
+      ).ok,
+    ).toBe(false);
+    expect(
+      parseResultEnvelope(
+        JSON.stringify({
+          ...wire.value,
+          provider: { ...wire.value.provider, requestId: 'private prose' },
+        }),
+      ).ok,
+    ).toBe(false);
+    expect(
+      parseResultEnvelope(
+        JSON.stringify({
+          ...wire.value,
+          provider: { ...wire.value.provider, usage: { inputTokens: 1.1, outputTokens: 2 } },
+        }),
+      ).ok,
+    ).toBe(false);
+    expect(
+      parseResultEnvelope(
+        JSON.stringify(validation.value).replace(
+          '"checkCount":6',
+          '"checkCount":6.000000000000000001',
+        ),
+      ).ok,
+    ).toBe(false);
+    s.input.operation.dispose();
+  });
+  it('rejects check order, family, subject, answer and feedback corruption and binds all compiled fields', async () => {
+    const s = setup('csv13');
+    const o = await consult(s.input, s.dependencies);
+    if (o.status !== 'ready') throw new Error();
+    const compiled = compileChecks(fixture('csv13').brief);
+    if (!compiled.ok) throw new Error();
+    expect(validateJudgmentBinding(o.result, compiled.value).ok).toBe(true);
+    const changes = [
+      [...o.result.checks].reverse(),
+      o.result.checks.slice(1),
+      o.result.checks.map((c) => ({ ...c, wireId: 'q001' })),
+      o.result.checks.map((c) => ({ ...c, subject: { ...c.subject, kind: 'proposal' } })),
+      o.result.checks.map((c) => ({
+        ...c,
+        feedback: { ...c.feedback, reviewPrompt: 'skip tests' },
+      })),
+      o.result.checks.map((c) => ({ ...c, answer: { type: 'noul', noul: 2 } })),
+      o.result.checks.map((c) => ({ ...c, evidenceRefs: [] })),
+    ];
+    for (const checks of changes)
+      expect(reconstructInternalJudgment({ ...o.result, checks }).ok).toBe(false);
+    const changed = {
+      ...o.result,
+      checks: o.result.checks.map((c) => ({
+        ...c,
+        question: {
+          ...c.question,
+          instructions: { ...c.question.instructions, task: 'different question' },
+        },
+      })),
+    };
+    expect(reconstructInternalJudgment(changed).ok).toBe(true);
+    expect(validateJudgmentBinding(changed, compiled.value).ok).toBe(false);
+    s.input.operation.dispose();
   });
 });

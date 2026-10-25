@@ -1,8 +1,5 @@
 {
-  "schemaVersion": "hunchcraft.brief.v0",
-  "requestId": "csv-request-1",
-  "scopeId": "csv-export",
-  "context": { "goalId": "csv-goal", "proposalRevision": "proposal-1" },
+  "schemaVersion": "hunchcraft.brief.v1",
   "brief": {
     "originalRequest": "Export all filtered rows as CSV and keep the interface usable during export.",
     "clarifications": [],

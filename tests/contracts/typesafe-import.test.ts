@@ -42,6 +42,10 @@ describe('TypeSafe import/factory inactivity', () => {
       },
     });
     try {
+      await import('../../src/core/brief.js');
+      await import('../../src/core/result.js');
+      await import('../../src/application/operation.js');
+      await import('../../src/application/consult.js');
       const { createTypeSafeProvider } = await import('../../src/providers/typesafe/provider.js');
       expect(
         createTypeSafeProvider({

@@ -230,7 +230,7 @@ describe('one-shot capped guarded fetch', () => {
               }
             : {
                 value: {
-                  ...failure('consent_revoked', 'consent'),
+                  ...failure('operation_cancelled', 'provider'),
                   message: 'PRIVATE-PAYLOAD-SENTINEL',
                 },
               },
@@ -257,7 +257,7 @@ describe('one-shot capped guarded fetch', () => {
   it.each(['guard', 'fetch'] as const)(
     'retains private validated payload after rejected construction mutation from %s',
     async (source) => {
-      const constructed = new ClassifiedFailure(failure('scope_mismatch', 'consent'));
+      const constructed = new ClassifiedFailure(failure('operation_deadline', 'provider'));
       expect(Reflect.set(constructed, 'failure', { message: 'PRIVATE-MUTATION-SENTINEL' })).toBe(
         false,
       );
@@ -272,9 +272,9 @@ describe('one-shot capped guarded fetch', () => {
       if (source === 'guard') s.guard.mockRejectedValue(constructed);
       else s.underlying.mockRejectedValue(constructed);
       await expect(s.transport.fetch(url, s.init)).rejects.toMatchObject({
-        failure: failure('scope_mismatch', 'consent'),
+        failure: failure('operation_deadline', 'provider'),
       });
-      expect(s.transport.error()).toEqual(failure('scope_mismatch', 'consent'));
+      expect(s.transport.error()).toEqual(failure('operation_deadline', 'provider'));
       expect(s.transport.snapshot().metadata.attempts).toBe(source === 'guard' ? 0 : 1);
       expect(JSON.stringify(s.transport.error())).not.toContain('PRIVATE');
       await s.transport.dispose();
@@ -424,9 +424,9 @@ describe('one-shot capped guarded fetch', () => {
   });
   it('preserves denial markers instead of copying guard errors', async () => {
     const s = setup();
-    s.guard.mockRejectedValue(new ClassifiedFailure(failure('scope_mismatch', 'consent')));
+    s.guard.mockRejectedValue(new ClassifiedFailure(failure('operation_deadline', 'provider')));
     await expect(s.transport.fetch(url, s.init)).rejects.toMatchObject({
-      failure: { code: 'scope_mismatch' },
+      failure: { code: 'operation_deadline' },
     });
     expect(s.underlying).not.toHaveBeenCalled();
     await s.transport.dispose();

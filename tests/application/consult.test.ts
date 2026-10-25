@@ -1,790 +1,526 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { consult } from '../../src/application/consult.js';
-import type {
-  EvaluationOutcome,
-  InternalJudgment,
-  PreparedDelivery,
-  Validation,
-} from '../../src/core/result.js';
-import { ClassifiedFailure, failure, invalid, prepareBytes } from '../../src/core/result.js';
-import { verify } from '../../src/application/verify.js';
-import {
-  deferred,
-  evaluation,
-  FakeSessions,
-  flush,
-  session,
-  setup,
-  uuid,
-  uuid2,
-} from '../helpers/consultation-fakes.js';
+import { compileChecks } from '../../src/core/checks.js';
+import { ClassifiedFailure, completedJudgmentEnvelope, failure } from '../../src/core/result.js';
+import type { EvaluationOutcome } from '../../src/core/result.js';
+import type { DecisionProvider, EvaluationControl } from '../../src/ports/decision-provider.js';
+import { deferred, evaluation, fixture, flush, setup } from '../helpers/consultation-fakes.js';
 
-describe('offline consultation', () => {
-  it('provider cannot replace a genuine classified payload before rejecting', async () => {
-    const s = setup();
-    const exception = new ClassifiedFailure(failure('provider_connection', 'provider'));
-    s.provider.handler = () => {
-      expect(
-        Reflect.set(exception, 'failure', { ...exception.failure, message: 'private payload' }),
-      ).toBe(false);
-      expect(() =>
-        Object.defineProperty(exception, 'failure', {
-          get: () => {
-            throw new Error('must not execute');
-          },
-        }),
-      ).toThrow();
-      return Promise.reject(exception);
-    };
-    expect(await consult(s.input, s.dependencies)).toMatchObject({
-      status: 'error',
-      outcome: { error: failure('provider_connection', 'provider') },
-      cleanup: { status: 'confirmed' },
-    });
-  });
-  it('confirmed admission requires persisted cleanup acknowledgment on provider failure', async () => {
-    const s = setup();
-    s.provider.handler = () =>
-      Promise.resolve({
-        ok: false,
-        error: failure('provider_connection', 'provider'),
-        usage: null,
-        metadata: { origin: 'test-fixture', attempts: 0, requestId: null, httpStatus: null },
-      });
-    s.store.finalize = (intent) =>
-      Promise.resolve({ ok: true, value: { ...intent, disposition: 'not-admitted' } });
-    const outcome = await consult(s.input, s.dependencies);
-    expect(outcome).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'provider_connection' } },
-      cleanup: { status: 'unconfirmed', error: { code: 'local_io' } },
-    });
-    expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBe(uuid);
-    expect(
-      s.store.attempts.get(s.store.key(s.input.sessionId, s.input.brief.requestId))?.state,
-    ).toBe('active');
-  });
-  it('matching reservation confirms admission before later inconsistent snapshot validation', async () => {
-    const s = setup();
-    const original = s.store.admit.bind(s.store);
-    s.store.admit = async (intent, control) => {
-      const admitted = await original(intent, control);
-      return admitted.ok
-        ? {
-            ok: true,
-            value: { ...admitted.value, consent: { ...admitted.value.consent, revoked: true } },
-          }
-        : admitted;
-    };
-    s.store.finalize = (intent) =>
-      Promise.resolve({ ok: true, value: { ...intent, disposition: 'not-admitted' } });
-    expect(await consult(s.input, s.dependencies)).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'consent_revoked' } },
-      cleanup: { status: 'unconfirmed', error: { code: 'local_io' } },
-    });
-    expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBe(uuid);
-    expect(s.provider.calls).toBe(0);
-  });
-  it('postcommit cancellation cannot falsely confirm not-admitted downgrade; leftover completion stays explicit', async () => {
-    const s = setup();
-    const original = s.store.finalize.bind(s.store);
-    let result: InternalJudgment | undefined;
-    s.store.finalize = async (intent, control) => {
-      if (intent.terminal.state === 'delivery-unknown')
-        return { ok: true, value: { ...intent, disposition: 'not-admitted' } };
-      const receipt = await original(intent, control);
-      s.controller.abort();
-      return receipt;
-    };
-    const outcome = await consult(s.input, {
-      ...s.dependencies,
-      prepareDelivery: (judgment) => {
-        result = judgment;
-        return s.dependencies.prepareDelivery(judgment);
-      },
-    });
-    expect(outcome).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'operation_cancelled' } },
-      cleanup: { status: 'unconfirmed', error: { code: 'local_io' } },
-    });
-    expect(
-      s.store.attempts.get(s.store.key(s.input.sessionId, s.input.brief.requestId))?.state,
-    ).toBe('completed');
-    expect(Object.keys(outcome)).not.toContain('result');
-    if (!result) throw new Error();
-    // Verify cannot infer failed delivery: cleanup must not claim the leftover
-    // completed record was durably downgraded.
-    expect(
-      await verify(
-        {
-          ...s.input,
-          signal: new AbortController().signal,
-          result: { format: 'internal', value: result },
-        },
-        s.dependencies,
-      ),
-    ).toMatchObject({ kind: 'verification' });
-  });
-  it('fenced ambiguous admission that never committed may acknowledge not-admitted', async () => {
-    const s = setup();
-    const pending = deferred<never>();
-    s.store.admit = () => pending.promise;
-    s.store.finalize = (intent) =>
-      Promise.resolve({ ok: true, value: { ...intent, disposition: 'not-admitted' } });
-    const work = consult(s.input, s.dependencies);
-    await flush();
-    s.controller.abort();
-    await flush();
-    expect(await work).toMatchObject({
-      status: 'error',
-      cleanup: { status: 'confirmed', error: null },
-    });
-    pending.reject(new Error('definitely not committed'));
-    await flush();
-    expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(0);
-  });
-  it.each(['hash', 'provider', 'preparation'] as const)(
-    'forged classified %s exception is sanitized without reading payload getter',
-    async (stage) => {
+describe('stateless consultation', () => {
+  it.each(['cancel', 'deadline'] as const)(
+    'refuses intake/dispatch if operation is already %s',
+    async (reason) => {
       const s = setup();
-      let calls = 0;
-      const forged = new Error('untrusted exception');
-      Object.setPrototypeOf(forged, ClassifiedFailure.prototype);
-      Object.defineProperty(forged, 'failure', {
-        get: () => {
-          calls++;
-          return { message: 'private exception payload' };
-        },
-      });
-      const dependencies = { ...s.dependencies };
-      if (stage === 'hash') dependencies.sha256 = () => Promise.reject(forged);
-      if (stage === 'provider') s.provider.handler = () => Promise.reject(forged);
-      if (stage === 'preparation') dependencies.prepareDelivery = () => Promise.reject(forged);
-      const outcome = await consult(s.input, dependencies);
-      expect(outcome).toMatchObject({
+      if (reason === 'cancel') s.controller.abort();
+      else s.clock.advance(15000, false);
+      expect(await consult(s.input, s.dependencies)).toMatchObject({
         status: 'error',
-        outcome: { error: failure('internal_failure', 'internal') },
+        failure: { code: reason === 'cancel' ? 'operation_cancelled' : 'operation_deadline' },
+        outcome: { provider: { attempts: 0, requestId: null, usage: null } },
       });
-      expect(calls).toBe(0);
-      expect(s.clock.timers.size).toBe(0);
+      expect(s.provider.calls).toBe(0);
+      s.input.operation.dispose();
     },
   );
-  it('HTTP-origin progress retains known status/usage on a hung fake transport', async () => {
-    const s = setup();
-    const pending = deferred<EvaluationOutcome>();
-    const provider = {
-      origin: 'provider-http' as const,
-      evaluate: async (
-        _plan: Parameters<typeof s.provider.evaluate>[0],
-        _state: Parameters<typeof s.provider.evaluate>[1],
-        control: Parameters<typeof s.provider.evaluate>[2],
-      ): Promise<EvaluationOutcome> => {
-        await control.beforeDispatch();
-        control.onProgress({
-          metadata: {
-            origin: 'provider-http',
-            attempts: 1,
-            requestId: 'fake_HTTP',
-            httpStatus: 529,
-          },
-          usage: { inputTokens: 11, outputTokens: 2 },
-        });
-        return pending.promise;
-      },
-    };
-    const work = consult(s.input, { ...s.dependencies, provider });
-    await flush();
-    s.controller.abort();
-    await flush();
-    expect(await work).toMatchObject({
-      status: 'error',
-      outcome: {
-        error: { code: 'operation_cancelled' },
-        provider: {
-          metadata: {
-            origin: 'provider-http',
-            attempts: 1,
-            requestId: 'fake_HTTP',
-            httpStatus: 529,
-          },
-          usage: { inputTokens: 11, outputTokens: 2 },
-        },
-      },
-    });
-    pending.reject(new Error('late fake transport'));
-    await flush();
-  });
-  it('HTTP failure cannot forge dispatch proof without the guard', async () => {
-    const s = setup();
-    const provider = {
-      origin: 'provider-http' as const,
-      evaluate: (): Promise<EvaluationOutcome> =>
-        Promise.resolve({
-          ok: false,
-          error: failure('provider_http', 'provider'),
-          usage: null,
-          metadata: { origin: 'provider-http', attempts: 1, requestId: null, httpStatus: 401 },
-        }),
-    };
-    expect(await consult(s.input, { ...s.dependencies, provider })).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'internal_failure' } },
-    });
-  });
   it.each(['minimal6', 'csv13'] as const)(
-    'carries %s through guard, owned preparation and exact completion',
+    'returns all raw %s judgments without sessions or preparation',
     async (name) => {
       const s = setup(name);
-      let preparedResult: InternalJudgment | undefined;
-      const outcome = await consult(s.input, {
-        ...s.dependencies,
-        prepareDelivery: (result) => {
-          preparedResult = result;
-          return Promise.resolve(
-            prepareBytes(new TextEncoder().encode(JSON.stringify(result) + '\n')),
-          );
-        },
+      const result = await consult(s.input, s.dependencies);
+      expect(result.status).toBe('ready');
+      if (result.status !== 'ready') throw new Error();
+      expect(Object.keys(result)).toEqual(['status', 'result']);
+      expect(result.result.checks).toHaveLength(name === 'minimal6' ? 6 : 13);
+      expect(result.result.checks[0]?.id).toBe('g.request-gap');
+      expect(result.result.checks[1]?.id).toBe('g.domain-gap');
+      expect(result.result.checks.find((c) => c.answer.type === 'score')?.answer).toMatchObject({
+        score: 1.5,
+        probabilities: { '0': 0.1, '1': 0.3, '2': 0.6 },
+        confidence: 0.4,
       });
-      expect(outcome.status).toBe('ready');
-      if (outcome.status !== 'ready') return;
       expect(s.provider.calls).toBe(1);
       expect(s.provider.dispatches).toBe(1);
-      expect(s.store.admitCalls).toBe(1);
-      expect(outcome.result).toBe(preparedResult);
-      expect(outcome.result.checks).toHaveLength(name === 'minimal6' ? 6 : 13);
-      expect(outcome.result.checks.every((c) => c.feedback.reviewPrompt && c.answer)).toBe(true);
-      expect(outcome.result.provider.metadata).toEqual({
-        origin: 'test-fixture',
-        attempts: 0,
-        requestId: null,
-        httpStatus: null,
-      });
-      expect(new TextDecoder().decode(outcome.prepared.copyBytes())).toBe(
-        JSON.stringify(outcome.result) + '\n',
-      );
-      expect(outcome.completion.terminal.completedAtMs).toBe(
-        Date.parse(outcome.result.freshness.completedAt),
-      );
-      expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(1);
-      expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBeNull();
+      expect(completedJudgmentEnvelope(result.result).ok).toBe(false);
+      expect(s.input.operation.checkpoint('output').ok).toBe(true);
+      expect(s.input.operation.signal.aborted).toBe(false);
+      expect(s.clock.timers.size).toBe(1);
+      s.input.operation.dispose();
       expect(s.clock.timers.size).toBe(0);
     },
   );
-  it('scope rejection occurs before admission/provider', async () => {
-    const s = setup();
-    const consent = s.store.snapshots.get(s.input.sessionId);
-    if (!consent) throw new Error();
-    s.store.snapshots.set(s.input.sessionId, {
-      ...consent,
-      scope: { ...consent.scope, allowSyntheticEvidence: false },
-    });
-    const o = await consult(s.input, s.dependencies);
-    expect(o).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'scope_mismatch' } },
-      cleanup: { status: 'not-required' },
-    });
-    expect(s.store.admitCalls).toBe(0);
-    expect(s.provider.calls).toBe(0);
+  it('independent concurrent invocations have no shared cap or state', async () => {
+    const a = setup();
+    const b = setup();
+    const gate = deferred<void>();
+    a.provider.handler = async (plan, control) => {
+      await control.beforeDispatch();
+      await gate.promise;
+      return evaluation(plan);
+    };
+    const pending = consult(a.input, a.dependencies);
+    expect((await consult(b.input, b.dependencies)).status).toBe('ready');
+    gate.resolve();
+    expect((await pending).status).toBe('ready');
+    a.input.operation.dispose();
+    b.input.operation.dispose();
   });
-  it.each(['cancelled', 'spent'] as const)('no dependency begins with %s input', async (mode) => {
-    const s = setup();
-    if (mode === 'cancelled') s.controller.abort();
-    else s.clock.advance(15000, false);
-    const o = await consult(s.input, s.dependencies);
-    expect(o).toMatchObject({
-      status: 'error',
-      outcome: { status: mode === 'cancelled' ? 'cancelled' : 'timeout' },
-    });
-    expect(s.store.readCalls).toBe(0);
-    expect(s.store.admitCalls).toBe(0);
-    expect(s.provider.calls).toBe(0);
-    expect(s.clock.timers.size).toBe(0);
-  });
-  it.each(['missing', 'repeated', 'concurrent'] as const)(
-    'fails closed for %s guard even when errors are swallowed',
-    async (mode) => {
+  it.each(['success', 'rejection'] as const)(
+    'concurrent consultations sharing an Operation dispatch once and observe late %s',
+    async (settlement) => {
       const s = setup();
-      s.provider.handler = async (plan, c) => {
-        if (mode === 'repeated') {
-          await c.beforeDispatch();
-          try {
-            await c.beforeDispatch();
-          } catch {
-            /* deliberately broken provider */
-          }
-        }
-        if (mode === 'concurrent')
-          await Promise.allSettled([c.beforeDispatch(), c.beforeDispatch()]);
+      const gate = deferred<void>();
+      s.provider.handler = async (plan, control) => {
+        await control.beforeDispatch();
+        s.provider.dispatches++;
+        await gate.promise;
         return evaluation(plan);
       };
+      try {
+        const first = consult(s.input, s.dependencies);
+        await flush();
+        expect(s.provider.dispatches).toBe(1);
+        const second = consult(s.input, s.dependencies);
+        // The duplicate claim interrupts the first wait without requiring the
+        // ignored-abort provider to settle or the clock to reach its deadline.
+        const outcomes = await Promise.all([first, second]);
+        expect(s.provider.calls).toBe(2);
+        expect(s.provider.dispatches).toBe(1);
+        expect(s.clock.monotonic).toBe(0);
+        for (const outcome of outcomes)
+          expect(outcome).toMatchObject({
+            status: 'error',
+            failure: { code: 'internal_failure' },
+          });
+        expect(s.provider.controls.every((control) => control.signal.aborted)).toBe(true);
+        const retained = JSON.stringify(outcomes);
+        if (settlement === 'success') gate.resolve();
+        else gate.reject(new Error('PRIVATE-LATE-REJECTION'));
+        // Vitest's unhandled-rejection checking remains enabled; the losing
+        // provider promise must stay observed even after both calls return.
+        await flush();
+        expect(s.provider.dispatches).toBe(1);
+        expect(JSON.stringify(outcomes)).toBe(retained);
+      } finally {
+        s.input.operation.dispose();
+      }
+      expect(s.clock.timers.size).toBe(0);
+    },
+  );
+  it('completed results own reconstructed final answers and metadata despite later port mutation', async () => {
+    const s = setup();
+    const compilation = compileChecks(fixture().brief);
+    if (!compilation.ok) throw new Error('Expected valid compilation');
+    const base = evaluation(compilation.value);
+    if (!base.ok) throw new Error('Expected valid fixture');
+    const baseScore = base.value.answers.q005;
+    if (baseScore?.type !== 'score') throw new Error('Expected Score fixture');
+    const noul = { type: 'noul' as const, noul: 0.2 };
+    const submittedScore = {
+      ...baseScore,
+      legend: { ...baseScore.legend },
+      probabilities: { ...baseScore.probabilities },
+    };
+    const final = {
+      ok: true as const,
+      value: {
+        answers: { ...base.value.answers, q001: noul, q005: submittedScore },
+        metadata: {
+          origin: 'provider-http' as const,
+          attempts: 1 as const,
+          requestId: 'HTTP_FINAL',
+          httpStatus: 200,
+        },
+        usage: { inputTokens: 120, outputTokens: 24 },
+      },
+    };
+    const p: DecisionProvider = {
+      origin: 'provider-http',
+      evaluate: async (_plan, _state, control) => {
+        await control.beforeDispatch();
+        return final;
+      },
+    };
+    try {
+      const outcome = await consult(s.input, { provider: p });
+      if (outcome.status !== 'ready') throw new Error('Expected completed result');
+      const retained = JSON.stringify(outcome);
+      expect(outcome.result.provider.metadata).not.toBe(final.value.metadata);
+      expect(outcome.result.provider.usage).not.toBe(final.value.usage);
+      const score = outcome.result.checks.find((check) => check.wireId === 'q005')?.answer;
+      if (score?.type !== 'score') throw new Error('Expected retained Score');
+      expect(score).not.toBe(final.value.answers.q005);
+      expect(score.legend).not.toBe(final.value.answers.q005.legend);
+      expect(score.probabilities).not.toBe(final.value.answers.q005.probabilities);
+      final.value.answers.q001.noul = 0.95;
+      final.value.answers.q005.score = 0;
+      final.value.answers.q005.legend['0'] = 'PRIVATE-MUTATED-LEGEND';
+      final.value.answers.q005.probabilities['0'] = 0.9;
+      final.value.metadata.requestId = 'MUTATED_ID';
+      final.value.usage.inputTokens = 999;
+      expect(JSON.stringify(outcome)).toBe(retained);
+      expect(outcome.result.checks[0]?.answer).toEqual({ type: 'noul', noul: 0.2 });
+      expect(score.probabilities).toEqual({ '0': 0.1, '1': 0.3, '2': 0.6 });
+      expect(completedJudgmentEnvelope(outcome.result).ok).toBe(true);
+    } finally {
+      s.input.operation.dispose();
+    }
+  });
+  it.each(['null', '{}', '{"schemaVersion":"hunchcraft.brief.v0","brief":{}}', 'bad'])(
+    'invalid document %s never evaluates',
+    async (bytes) => {
+      const s = setup();
+      const o = await consult({ ...s.input, bytes }, s.dependencies);
+      expect(o).toMatchObject({
+        status: 'error',
+        failure: { code: 'invalid_input', exitCode: 2 },
+        outcome: {
+          schemaVersion: 'hunchcraft.result.v1',
+          status: 'failed',
+          provider: { attempts: 0, requestId: null, usage: null, costEstimate: null },
+        },
+      });
+      expect(s.provider.calls).toBe(0);
+      expect(s.input.operation.checkpoint('output').ok).toBe(true);
+      s.input.operation.dispose();
+    },
+  );
+  it('rejects mandatory check overflow without dispatch', async () => {
+    const s = setup();
+    const base = fixture('csv13').brief;
+    const component = base.brief.components[0];
+    if (!component) throw new Error();
+    const bytes = JSON.stringify({
+      ...base,
+      brief: {
+        ...base.brief,
+        components: [...base.brief.components, { ...component, id: 'support' }],
+      },
+    });
+    expect(await consult({ ...s.input, bytes }, s.dependencies)).toMatchObject({
+      status: 'error',
+      failure: { code: 'check_budget_exceeded', exitCode: 2 },
+    });
+    expect(s.provider.calls).toBe(0);
+    s.input.operation.dispose();
+  });
+  it('the caller deadline is not reset by consultation and remains enforced at output', async () => {
+    const s = setup();
+    s.clock.advance(14000);
+    const o = await consult(s.input, s.dependencies);
+    expect(o.status).toBe('ready');
+    expect(s.input.operation.remainingMs()).toBe(1000);
+    s.clock.advance(1000, false);
+    expect(s.input.operation.checkpoint('output')).toEqual({
+      ok: false,
+      error: failure('operation_deadline', 'output'),
+    });
+    s.input.operation.dispose();
+  });
+  it('caller cancellation after advice but before output still invalidates consumption', async () => {
+    const s = setup();
+    expect((await consult(s.input, s.dependencies)).status).toBe('ready');
+    s.controller.abort();
+    expect(s.input.operation.checkpoint('output')).toMatchObject({
+      ok: false,
+      error: { code: 'operation_cancelled' },
+    });
+    s.input.operation.dispose();
+  });
+  it.each(['cancel', 'deadline', 'elapsed', 'dispose'] as const)(
+    'bounds ignored-abort work on %s and observes late rejection',
+    async (reason) => {
+      const s = setup();
+      const gate = deferred<EvaluationOutcome>();
+      s.provider.handler = async (_plan, control) => {
+        await control.beforeDispatch();
+        return gate.promise;
+      };
+      const pending = consult(s.input, s.dependencies);
+      await flush();
+      if (reason === 'cancel') s.controller.abort();
+      else if (reason === 'dispose') s.input.operation.dispose();
+      else s.clock.advance(15000, reason === 'deadline');
+      if (reason === 'elapsed') gate.reject(new Error('PRIVATE'));
+      const o = await pending;
+      expect(o).toMatchObject({
+        status: 'error',
+        failure: {
+          code:
+            reason === 'cancel'
+              ? 'operation_cancelled'
+              : reason === 'dispose'
+                ? 'internal_failure'
+                : 'operation_deadline',
+        },
+      });
+      gate.reject(new Error('PRIVATE'));
+      await flush();
+      expect(JSON.stringify(o)).not.toContain('PRIVATE');
+      s.input.operation.dispose();
+    },
+  );
+  it.each(['cancel', 'elapsed'] as const)(
+    'suppresses late success with %s precedence',
+    async (reason) => {
+      const s = setup();
+      const gate = deferred<void>();
+      s.provider.handler = async (plan, control) => {
+        await control.beforeDispatch();
+        await gate.promise;
+        return evaluation(plan);
+      };
+      const pending = consult(s.input, s.dependencies);
+      await flush();
+      if (reason === 'cancel') s.controller.abort();
+      else s.clock.advance(15000, false);
+      gate.resolve();
+      expect(await pending).toMatchObject({
+        status: 'error',
+        failure: { code: reason === 'cancel' ? 'operation_cancelled' : 'operation_deadline' },
+      });
+      s.input.operation.dispose();
+    },
+  );
+  it('refuses repeated guards and another consultation cannot reset the invocation claim', async () => {
+    const s = setup();
+    s.provider.handler = async (plan, control) => {
+      await control.beforeDispatch();
+      await control.beforeDispatch();
+      return evaluation(plan);
+    };
+    expect(await consult(s.input, s.dependencies)).toMatchObject({
+      status: 'error',
+      failure: { code: 'internal_failure' },
+    });
+    s.input.operation.dispose();
+    const t = setup();
+    expect((await consult(t.input, t.dependencies)).status).toBe('ready');
+    expect(await consult(t.input, t.dependencies)).toMatchObject({
+      status: 'error',
+      failure: { code: 'internal_failure' },
+    });
+    expect(t.provider.dispatches).toBe(1);
+    t.input.operation.dispose();
+  });
+  it('cannot report success without the dispatch guard', async () => {
+    const s = setup();
+    s.provider.handler = (plan) => Promise.resolve(evaluation(plan));
+    expect(await consult(s.input, s.dependencies)).toMatchObject({
+      status: 'error',
+      failure: { code: 'internal_failure' },
+    });
+    s.input.operation.dispose();
+  });
+  it.each(['unknown', 'forged', 'classified'] as const)(
+    'sanitizes %s exceptions without reading exception properties',
+    async (kind) => {
+      const s = setup();
+      let reads = 0;
+      const forged: object = Object.create(ClassifiedFailure.prototype) as object;
+      Object.defineProperty(forged, 'failure', {
+        get: () => {
+          reads++;
+          throw new Error('PRIVATE');
+        },
+      });
+      const error =
+        kind === 'classified'
+          ? new ClassifiedFailure(failure('provider_connection', 'provider'))
+          : kind === 'forged'
+            ? forged
+            : new Error('PRIVATE');
+      if (!(error instanceof Error)) throw new Error('Expected error-prototype fixture');
+      s.provider.handler = () => Promise.reject(error);
       const o = await consult(s.input, s.dependencies);
       expect(o).toMatchObject({
         status: 'error',
-        outcome: { error: { code: 'internal_failure' } },
-        cleanup: { status: 'confirmed' },
+        failure: { code: kind === 'classified' ? 'provider_connection' : 'internal_failure' },
       });
-      expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(1);
-      expect(s.clock.timers.size).toBe(0);
-      if (o.status === 'error') expect(Object.keys(o.outcome)).not.toContain('checks');
+      expect(reads).toBe(0);
+      expect(JSON.stringify(o)).not.toContain('PRIVATE');
+      expect(s.input.operation.checkpoint('output').ok).toBe(true);
+      s.input.operation.dispose();
     },
   );
-  it('pre-dispatch provider failure consumes admission with attempts zero and no guard', async () => {
+  it('revalidates port answers instead of trusting the TypeScript union', async () => {
     const s = setup();
-    s.provider.handler = () =>
-      Promise.resolve({
+    s.provider.handler = async (plan, control) => {
+      await control.beforeDispatch();
+      const e = evaluation(plan);
+      if (!e.ok) throw new Error();
+      return { ok: true, value: { ...e.value, answers: {} } };
+    };
+    expect(await consult(s.input, s.dependencies)).toMatchObject({
+      status: 'error',
+      failure: { code: 'internal_failure' },
+    });
+    s.input.operation.dispose();
+  });
+});
+
+describe('monotonic dispatched progress', () => {
+  const dispatched = {
+    metadata: { origin: 'provider-http', attempts: 1, requestId: 'HTTP_1', httpStatus: 502 },
+    usage: { inputTokens: 11, outputTokens: 2 },
+  } as const;
+  function provider(
+    handler: (control: EvaluationControl) => Promise<EvaluationOutcome>,
+  ): DecisionProvider {
+    return { origin: 'provider-http', evaluate: (_plan, _state, control) => handler(control) };
+  }
+  it('keeps independently validated metadata on rejection', async () => {
+    const s = setup();
+    const p = provider(async (control) => {
+      await control.beforeDispatch();
+      control.onProgress(dispatched);
+      throw new Error('PRIVATE');
+    });
+    const o = await consult(s.input, { provider: p });
+    expect(o).toMatchObject({
+      status: 'error',
+      outcome: {
+        provider: { attempts: 1, requestId: 'HTTP_1', usage: { inputTokens: 11, outputTokens: 2 } },
+      },
+    });
+    s.input.operation.dispose();
+  });
+  it('owns submitted progress and reconstructed failure fields despite mutations during and after evaluation', async () => {
+    const s = setup();
+    const submitted = {
+      metadata: { ...dispatched.metadata, httpStatus: 502 },
+      usage: { inputTokens: 11, outputTokens: 2 },
+    };
+    const final = {
+      ok: false as const,
+      error: { ...failure('provider_http', 'provider') },
+      metadata: { ...dispatched.metadata, httpStatus: 502 },
+      usage: { inputTokens: 11, outputTokens: 2 },
+    };
+    const gate = deferred<void>();
+    const p = provider(async (control) => {
+      await control.beforeDispatch();
+      control.onProgress(submitted);
+      submitted.metadata.httpStatus = 200;
+      submitted.usage.inputTokens = 999;
+      await gate.promise;
+      return final;
+    });
+    try {
+      const pending = consult(s.input, { provider: p });
+      await flush();
+      expect(submitted.usage.inputTokens).toBe(999);
+      gate.resolve();
+      const outcome = await pending;
+      if (outcome.status !== 'error') throw new Error('Expected provider failure');
+      expect(outcome.failure).toEqual(failure('provider_http', 'provider'));
+      expect(outcome.outcome.provider).toEqual({
+        attempts: 1,
+        requestId: 'HTTP_1',
+        usage: { inputTokens: 11, outputTokens: 2 },
+        costEstimate: null,
+      });
+      expect(outcome.failure).not.toBe(final.error);
+      expect(outcome.outcome.provider.usage).not.toBe(final.usage);
+      expect(outcome.outcome.provider.usage).not.toBe(submitted.usage);
+      const retained = JSON.stringify(outcome);
+      final.error.message = 'PRIVATE-MUTATED-FAILURE';
+      final.metadata.httpStatus = 201;
+      final.usage.inputTokens = 888;
+      submitted.usage.outputTokens = 777;
+      expect(JSON.stringify(outcome)).toBe(retained);
+    } finally {
+      s.input.operation.dispose();
+    }
+  });
+  it.each([
+    { metadata: { ...dispatched.metadata, attempts: 0 }, usage: null },
+    { metadata: { ...dispatched.metadata, requestId: 'different' }, usage: dispatched.usage },
+    { metadata: { ...dispatched.metadata, httpStatus: 200 }, usage: dispatched.usage },
+    { metadata: dispatched.metadata, usage: null },
+    { metadata: dispatched.metadata, usage: { inputTokens: 12, outputTokens: 2 } },
+    { metadata: dispatched.metadata, usage: dispatched.usage, extra: true },
+  ])('rejects regression/invalid progress %j while retaining prior valid data', async (next) => {
+    const s = setup();
+    const p = provider(async (control) => {
+      await control.beforeDispatch();
+      control.onProgress(dispatched);
+      control.onProgress(next);
+      return { ok: false, error: failure('provider_http', 'provider'), ...dispatched };
+    });
+    expect(await consult(s.input, { provider: p })).toMatchObject({
+      status: 'error',
+      failure: { code: 'internal_failure' },
+      outcome: { provider: { attempts: 1, requestId: 'HTTP_1', usage: dispatched.usage } },
+    });
+    s.input.operation.dispose();
+  });
+  it('rejects dispatched progress before guard and refuses late progress/guard after return', async () => {
+    const s = setup();
+    let saved: EvaluationControl | undefined;
+    const p = provider((control) => {
+      saved = control;
+      control.onProgress(dispatched);
+      return Promise.resolve({
         ok: false,
         error: failure('missing_key', 'configuration'),
+        metadata: { origin: 'provider-http', attempts: 0, requestId: null, httpStatus: null },
         usage: null,
-        metadata: { origin: 'test-fixture', attempts: 0, requestId: null, httpStatus: null },
       });
-    const o = await consult(s.input, s.dependencies);
+    });
+    const o = await consult(s.input, { provider: p });
     expect(o).toMatchObject({
       status: 'error',
-      outcome: {
-        error: { code: 'missing_key' },
-        provider: { usage: null, metadata: { attempts: 0 } },
-      },
-      cleanup: { status: 'confirmed' },
+      failure: { code: 'internal_failure' },
+      outcome: { provider: { attempts: 0, usage: null } },
     });
-    expect(s.store.checkCalls).toBe(0);
-    expect(s.provider.dispatches).toBe(0);
-    expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(1);
+    if (!saved) throw new Error();
+    saved.onProgress(dispatched);
+    await expect(saved.beforeDispatch()).rejects.toThrow();
+    expect(o).toMatchObject({ outcome: { provider: { attempts: 0, usage: null } } });
+    s.input.operation.dispose();
   });
-  it('revocation inside guard prevents dispatch and wins over provider success', async () => {
+  it('final outcome cannot erase established observations', async () => {
     const s = setup();
-    s.provider.handler = async (plan, c) => {
-      s.store.revoke(s.input.sessionId);
-      try {
-        await c.beforeDispatch();
-      } catch {
-        /* swallowed by broken provider */
-      }
-      return evaluation(plan);
-    };
-    expect(await consult(s.input, s.dependencies)).toMatchObject({
+    const p = provider(async (control) => {
+      await control.beforeDispatch();
+      control.onProgress(dispatched);
+      return {
+        ok: false,
+        error: failure('provider_http', 'provider'),
+        metadata: { ...dispatched.metadata, requestId: null },
+        usage: null,
+      };
+    });
+    expect(await consult(s.input, { provider: p })).toMatchObject({
       status: 'error',
-      outcome: { error: { code: 'consent_revoked' } },
-      cleanup: { status: 'confirmed' },
+      failure: { code: 'internal_failure' },
+      outcome: { provider: { requestId: 'HTTP_1', usage: dispatched.usage } },
     });
-    expect(s.provider.dispatches).toBe(0);
+    s.input.operation.dispose();
   });
-  it.each(['disappearing', 'forged'] as const)('rejects %s progress metadata', async (mode) => {
+  it('pre-dispatch missing configuration remains a bounded zero-attempt failure', async () => {
     const s = setup();
-    s.provider.handler = async (plan, c) => {
-      await c.beforeDispatch();
-      c.onProgress({
-        metadata: { origin: 'test-fixture', attempts: 0, requestId: null, httpStatus: null },
-        usage: { inputTokens: 120, outputTokens: 24 },
-      });
-      c.onProgress(
-        mode === 'disappearing'
-          ? {
-              metadata: { origin: 'test-fixture', attempts: 0, requestId: null, httpStatus: null },
-              usage: null,
-            }
-          : {
-              metadata: {
-                origin: 'provider-http',
-                attempts: 1,
-                requestId: 'forged',
-                httpStatus: 200,
-              },
-              usage: { inputTokens: 120, outputTokens: 24 },
-            },
-      );
-      return evaluation(plan);
-    };
-    expect(await consult(s.input, s.dependencies)).toMatchObject({
-      status: 'error',
-      outcome: {
-        error: { code: 'internal_failure' },
-        provider: { usage: { inputTokens: 120, outputTokens: 24 } },
-      },
-    });
-  });
-  it('retains known progress on hung provider and observes late rejection', async () => {
-    const s = setup();
-    const pending = deferred<EvaluationOutcome>();
-    s.provider.handler = async (_plan, c) => {
-      await c.beforeDispatch();
-      c.onProgress({
-        metadata: { origin: 'test-fixture', attempts: 0, requestId: null, httpStatus: null },
-        usage: { inputTokens: 10, outputTokens: 2 },
-      });
-      return pending.promise;
-    };
-    const work = consult(s.input, s.dependencies);
-    await flush();
-    s.clock.advance(15000);
-    await flush();
-    const o = await work;
-    expect(o).toMatchObject({
-      status: 'error',
-      outcome: {
-        error: { code: 'operation_deadline' },
-        provider: { usage: { inputTokens: 10, outputTokens: 2 } },
-      },
-      cleanup: { status: 'confirmed' },
-    });
-    pending.reject(new Error('secret'));
-    await flush();
-    s.provider.controls[0]?.onProgress({ approved: true });
-    expect(s.clock.timers.size).toBe(0);
-  });
-  it('elapsed checkpoint catches late settlement before timer notification', async () => {
-    const s = setup();
-    const pending = deferred<string>();
-    const work = consult(s.input, { ...s.dependencies, sha256: () => pending.promise });
-    await flush();
-    s.clock.advance(15000, false);
-    pending.resolve('a'.repeat(64));
-    await flush();
-    expect(await work).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'operation_deadline' } },
-      cleanup: { status: 'not-required' },
-    });
-    expect(s.store.admitCalls).toBe(0);
-  });
-  it.each(['hash', 'read', 'admit', 'check', 'provider', 'preparation', 'commit'] as const)(
-    'bounds a hung %s dependency without sleeps',
-    async (stage) => {
-      const s = setup();
-      const never = deferred<never>();
-      const dependencies = { ...s.dependencies };
-      if (stage === 'hash') dependencies.sha256 = () => never.promise;
-      if (stage === 'read') s.store.read = () => never.promise;
-      if (stage === 'admit') s.store.admit = () => never.promise;
-      if (stage === 'check') s.store.check = () => never.promise;
-      if (stage === 'provider') s.provider.handler = () => never.promise;
-      if (stage === 'preparation') dependencies.prepareDelivery = () => never.promise;
-      if (stage === 'commit') s.store.finalize = () => never.promise;
-      const work = consult(s.input, dependencies);
-      await flush();
-      s.clock.advance(15000);
-      await flush();
-      s.clock.advance(1000);
-      await flush();
-      const o = await work;
-      expect(o).toMatchObject({
-        status: 'error',
-        outcome: { error: { code: 'operation_deadline' } },
-      });
-      never.reject(new Error('late private dependency error'));
-      await flush();
-      expect(s.clock.timers.size).toBe(0);
-      if (o.status === 'error') expect(Object.keys(o.outcome)).not.toContain('checks');
-    },
-  );
-  it('malformed typed store/preparation data cannot smuggle arbitrary methods', async () => {
-    const s = setup();
-    let calls = 0;
-    const o = await consult(s.input, {
-      ...s.dependencies,
-      prepareDelivery: () =>
-        Promise.resolve({
-          ok: true,
-          value: {
-            byteLength: 1,
-            copyBytes: () => {
-              calls++;
-              return new Uint8Array([10]);
-            },
-          },
-        }),
-    });
-    expect(o).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'internal_failure' } },
-      cleanup: { status: 'confirmed' },
-    });
-    expect(calls).toBe(0);
-  });
-  it('wall rollback and decreasing monotonic readings fail closed', async () => {
-    const s = setup();
-    const o = await consult(s.input, {
-      ...s.dependencies,
-      sha256: (bytes) => {
-        s.clock.wall -= 1001;
-        return s.dependencies.sha256(bytes);
-      },
-    });
-    expect(o).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'clock_inconsistent', exitCode: 1 } },
-    });
-    expect(s.provider.calls).toBe(0);
-    const t = setup();
-    t.clock.monotonic = 5;
-    const bad = await consult(t.input, {
-      ...t.dependencies,
-      sha256: (bytes) => {
-        t.clock.monotonic = 4;
-        return t.dependencies.sha256(bytes);
-      },
-    });
-    expect(bad).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'clock_inconsistent' } },
-    });
-  });
-  it('caller cancellation is retained over later provider rejection', async () => {
-    const s = setup();
-    const pending = deferred<EvaluationOutcome>();
-    s.provider.handler = async (_p, c) => {
-      await c.beforeDispatch();
-      return pending.promise;
-    };
-    const work = consult(s.input, s.dependencies);
-    await flush();
-    s.controller.abort();
-    pending.reject(new Error('private source'));
-    await flush();
-    expect(await work).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'operation_cancelled' } },
-      cleanup: { status: 'confirmed' },
-    });
-    expect(s.clock.timers.size).toBe(0);
-  });
-  it('pending admission gets its terminal intent before a controlled late commit', async () => {
-    const s = setup();
-    s.store.deferAdmission = true;
-    const work = consult(s.input, s.dependencies);
-    await flush();
-    s.controller.abort();
-    await flush();
-    const pending = s.store.pending.get(uuid);
-    expect(pending?.intent?.terminal.state).toBe('cancelled');
-    pending?.gate.resolve();
-    await flush();
-    expect(await work).toMatchObject({ status: 'error', cleanup: { status: 'confirmed' } });
-    expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(1);
-    expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBeNull();
-    expect(s.provider.calls).toBe(0);
-  });
-  it('never-settling admission returns unconfirmed in one grace; late admission cannot revive slot', async () => {
-    const s = setup();
-    s.store.deferAdmission = true;
-    const work = consult(s.input, s.dependencies);
-    await flush();
-    s.controller.abort();
-    await flush();
-    expect(s.clock.timers.size).toBe(1);
-    s.clock.advance(1000);
-    await flush();
-    expect(await work).toMatchObject({ status: 'error', cleanup: { status: 'unconfirmed' } });
-    s.store.pending.get(uuid)?.gate.resolve();
-    await flush();
-    expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBeNull();
-    expect(s.store.snapshots.get(s.input.sessionId)?.attemptsUsed).toBe(1);
-    expect(s.provider.calls).toBe(0);
-    expect(s.clock.timers.size).toBe(0);
-  });
-  it.each(['reject', 'hung', 'malformed', 'expiry'] as const)(
-    'preparation %s never commits completed',
-    async (mode) => {
-      const s = setup();
-      const pending = deferred<Validation<PreparedDelivery>>();
-      const work = consult(s.input, {
-        ...s.dependencies,
-        prepareDelivery: async () => {
-          if (mode === 'reject') throw new Error('secret');
-          if (mode === 'malformed') return invalid('output_too_large', 'output');
-          if (mode === 'expiry') {
-            s.clock.wall += 60000;
-            return prepareBytes(new Uint8Array([10]));
-          }
-          return pending.promise;
+    const evaluate = vi.fn(() =>
+      Promise.resolve({
+        ok: false as const,
+        error: failure('missing_key', 'configuration'),
+        metadata: {
+          origin: 'provider-http' as const,
+          attempts: 0 as const,
+          requestId: null,
+          httpStatus: null,
         },
-      });
-      await flush();
-      if (mode === 'hung') {
-        s.clock.advance(15000);
-        await flush();
-      }
-      const o = await work;
-      expect(o.status).toBe('error');
-      expect(
-        s.store.attempts.get(s.store.key(s.input.sessionId, s.input.brief.requestId))?.state,
-      ).not.toBe('completed');
-      if (mode === 'hung') pending.reject(new Error('late'));
-      await flush();
-      expect(s.clock.timers.size).toBe(0);
-    },
-  );
-  it('pending completion is fenced to delivery-unknown preserving exact prepared timestamps', async () => {
-    const s = setup();
-    s.store.deferCommit = true;
-    const work = consult(s.input, s.dependencies);
-    await flush();
-    const c = s.store.commits.get(uuid);
-    expect(c).toBeDefined();
-    s.controller.abort();
-    await flush();
-    expect(c?.downgrade?.terminal.state).toBe('delivery-unknown');
-    c?.gate.resolve();
-    await flush();
-    expect(await work).toMatchObject({ status: 'error', cleanup: { status: 'confirmed' } });
-    const attempt = s.store.attempts.get(s.store.key(s.input.sessionId, s.input.brief.requestId));
-    expect(attempt?.state).toBe('delivery-unknown');
-    expect(attempt?.completedAtMs).toBe(c?.intent.terminal.completedAtMs);
-  });
-  it('definitive no-commit cannot claim delivery-unknown acknowledgment', async () => {
-    const s = setup();
-    s.store.deferCommit = true;
-    const work = consult(s.input, s.dependencies);
-    await flush();
-    const c = s.store.commits.get(uuid);
-    if (!c) throw new Error();
-    s.controller.abort();
-    await flush();
-    c.fail = true;
-    c.gate.resolve();
-    await flush();
-    expect(await work).toMatchObject({
+        usage: null,
+      }),
+    );
+    expect(
+      await consult(s.input, { provider: { origin: 'provider-http', evaluate } }),
+    ).toMatchObject({
       status: 'error',
-      cleanup: { status: 'unconfirmed', error: { code: 'local_io' } },
+      failure: { exitCode: 3 },
+      outcome: { provider: { attempts: 0, requestId: null, usage: null } },
     });
-    expect(
-      s.store.attempts.get(s.store.key(s.input.sessionId, s.input.brief.requestId))?.state,
-    ).toBe('active');
-  });
-  it('hang cleanup cannot pretend durable release or expose computed judgment', async () => {
-    const s = setup();
-    s.store.hangFinalize = true;
-    s.provider.handler = () => Promise.reject(new Error('private'));
-    const work = consult(s.input, s.dependencies);
-    await flush();
-    s.clock.advance(1000);
-    await flush();
-    const o = await work;
-    expect(o).toMatchObject({ status: 'error', cleanup: { status: 'unconfirmed' } });
-    if (o.status === 'error') expect(Object.keys(o)).toEqual(['status', 'outcome', 'cleanup']);
-    expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBe(uuid);
-  });
-  it('postcommit revocation downgrades only its owner, never a newer active UUID', async () => {
-    const s = setup();
-    const original = s.store.finalize.bind(s.store);
-    s.store.finalize = async (intent, control) => {
-      const receipt = await original(intent, control);
-      if (intent.terminal.state === 'completed') {
-        const consent = s.store.snapshots.get(s.input.sessionId);
-        if (!consent) throw new Error();
-        // Another invocation may be active once completion atomically released ours.
-        s.store.snapshots.set(s.input.sessionId, {
-          ...consent,
-          activeInvocationId: uuid2,
-          revoked: true,
-        });
-      }
-      return receipt;
-    };
-    const o = await consult(s.input, s.dependencies);
-    expect(o).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'consent_revoked' } },
-      cleanup: { status: 'confirmed' },
-    });
-    expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBe(uuid2);
-    expect(
-      s.store.attempts.get(s.store.key(s.input.sessionId, s.input.brief.requestId))?.state,
-    ).toBe('delivery-unknown');
-    expect(s.store.finalizeCalls).toBe(2);
-  });
-  it('postcommit checks accept own completed record while another owner is busy', async () => {
-    const s = setup();
-    const original = s.store.finalize.bind(s.store);
-    s.store.finalize = async (intent, control) => {
-      const receipt = await original(intent, control);
-      if (intent.terminal.state === 'completed') {
-        const consent = s.store.snapshots.get(s.input.sessionId);
-        if (!consent) throw new Error();
-        s.store.snapshots.set(s.input.sessionId, { ...consent, activeInvocationId: uuid2 });
-      }
-      return receipt;
-    };
-    expect(await consult(s.input, s.dependencies)).toMatchObject({ status: 'ready' });
-    expect(s.store.snapshots.get(s.input.sessionId)?.activeInvocationId).toBe(uuid2);
-  });
-  it('zero queue same-session busy and duplicate/cap remain permanently enforced', async () => {
-    const s = setup();
-    const p = deferred<EvaluationOutcome>();
-    s.provider.handler = async (plan, c) => {
-      await c.beforeDispatch();
-      return p.promise.then(() => evaluation(plan));
-    };
-    const first = consult(s.input, s.dependencies);
-    await flush();
-    const secondInput = {
-      ...s.input,
-      brief: { ...s.input.brief, requestId: 'second' },
-      invocationId: uuid2,
-    };
-    const second = await consult(secondInput, s.dependencies);
-    expect(second).toMatchObject({
-      status: 'error',
-      outcome: { error: { code: 'session_busy' } },
-      cleanup: { status: 'not-required' },
-    });
-    expect(s.provider.calls).toBe(1);
-    s.controller.abort();
-    await flush();
-    await first;
-    expect(
-      await consult({ ...s.input, signal: new AbortController().signal }, s.dependencies),
-    ).toMatchObject({ status: 'error', outcome: { error: { code: 'request_already_admitted' } } });
-    const consent = s.store.snapshots.get(s.input.sessionId);
-    if (!consent) throw new Error();
-    s.store.snapshots.set(s.input.sessionId, { ...consent, maxCalls: 1 });
-    expect(
-      await consult({ ...secondInput, signal: new AbortController().signal }, s.dependencies),
-    ).toMatchObject({ status: 'error', outcome: { error: { code: 'session_call_limit' } } });
-    p.reject(new Error('late'));
-    await flush();
-  });
-  it('independent sessions finish reversed with isolated preparation and ownership', async () => {
-    const s = setup();
-    const otherConsent = session(s.clock, 'c'.repeat(32));
-    const store = new FakeSessions(s.clock, session(s.clock), otherConsent);
-    const one = deferred<EvaluationOutcome>();
-    const two = deferred<EvaluationOutcome>();
-    let calls = 0;
-    s.provider.handler = async (plan, c) => {
-      const slot = calls++ === 0 ? one : two;
-      await c.beforeDispatch();
-      return slot.promise.then(() => evaluation(plan));
-    };
-    const first = consult(s.input, { ...s.dependencies, sessions: store });
-    const secondInput = { ...s.input, sessionId: otherConsent.sessionId, invocationId: uuid2 };
-    const second = consult(secondInput, { ...s.dependencies, sessions: store });
-    await flush();
-    two.resolve({
-      ok: false,
-      error: failure('missing_key', 'configuration'),
-      usage: null,
-      metadata: { origin: 'test-fixture', attempts: 0, requestId: null, httpStatus: null },
-    });
-    await flush();
-    const b = await second;
-    expect(b.status).toBe('ready');
-    one.resolve({
-      ok: false,
-      error: failure('missing_key', 'configuration'),
-      usage: null,
-      metadata: { origin: 'test-fixture', attempts: 0, requestId: null, httpStatus: null },
-    });
-    const a = await first;
-    expect(a.status).toBe('ready');
-    if (a.status === 'ready' && b.status === 'ready') {
-      expect(a.result.sessionId).not.toBe(b.result.sessionId);
-      expect(a.completion.invocationId).toBe(uuid);
-      expect(b.completion.invocationId).toBe(uuid2);
-      expect(a.prepared.copyBytes()).not.toEqual(b.prepared.copyBytes());
-    }
-    expect(s.clock.timers.size).toBe(0);
+    expect(s.input.operation.checkpoint('output').ok).toBe(true);
+    s.input.operation.dispose();
   });
 });
