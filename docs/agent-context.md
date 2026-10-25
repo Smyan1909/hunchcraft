@@ -42,8 +42,10 @@ pushed and its [GitHub CI](https://github.com/Smyan1909/hunchcraft/actions/runs/
 passed. Session/consent/identity/durable verify
 modules and obsolete tests are retired. Inner grammar/compiler goldens, provider source
 and dependency pins are unchanged. S1 is independently reviewed offline, including four
-added concurrency/mutation cases. S2 adds CLI/bin and explicit Node composition,
-independently reviewed offline. Its actual packed-install/platform acceptance remains S3.
+added concurrency/mutation cases. S2 milestone **`c458e47`** is committed/pushed, adding
+CLI/bin and explicit Node composition, independently reviewed offline. Its actual
+packed-install/platform acceptance remains S3. Its remote CI passed Windows Node 22/24
+but failed Linux Node 22/24 on the blocked-output deadline assertion; see below.
 No functional public API, shipped skill, host adapter,
 live inference, evaluation runner or measured quality/cost/savings exists.
 
@@ -79,7 +81,8 @@ wording were corrected in the contract. Planning checks are recorded below.
 
 ## Next step
 
-Save the verified S2 milestone, then complete packed-artifact/platform/usage work (S3). Do not
+Save the verified S3 milestone, observe corrected remote CI, then ask the user to select
+the next milestone. Do not
 start the retired Windows ACL/storage milestone. No credentials or host choice are
 needed for the next offline slice.
 
@@ -108,7 +111,44 @@ types/lint/architecture and pack dry-run **116 files** on macOS/Node 24.22.1/npm
 11.17.0. Root/status docs and ADR 0005 are integrated; independent documentation
 review passed formatting/whitespace and 133 Markdown links across 39 files. Its low
 provider status clarification is corrected to reflect completed S2 composition.
-No Node 22/Windows/Linux/packed-install or S2 remote CI evidence is asserted yet.
+S2 remote [CI run](https://github.com/Smyan1909/hunchcraft/actions/runs/40214758344):
+Windows Node 22/24 full checks and pack dry-run passed. Linux Node 22/24 failed
+`tests/integrations/cli/process.test.ts:225` (expected blocked-output exit 5, received
+0). Independent review identified a test setup defect: prefill scheduled one 2 MiB
+asynchronous write and announced readiness without establishing saturation or handling
+short writes. Linux returned 0 in 111/117 ms; no production termination defect is
+identified by that evidence. The required repair is verified saturation before the
+CLI starts, not larger arbitrary buffers/sleeps or disabling the regression. Linux
+acceptance requires corrected Node 22/24 tests. Local Node 22/actual
+packed-install checks are still S3 work.
+
+## S3 verification (2026-10-25)
+
+S3 implements actual archive/installed-byte/map inspection, cache-only locked SDK 0.6.0
+payload comparison, inert installed-root checks, ten npm-generated shim cases, Unicode/
+CRLF, EPIPE and POSIX interruption. Public usage/example ship; other unshipped guide
+links point to GitHub. Marketer docs are independently reviewed; PowerShell is scoped
+to Windows with UTF-8 decoding (the instructions themselves were not executed here).
+
+The Unix fixture uses a real FIFO with verified single-byte EAGAIN before launch,
+handling partial writes and restoring blocking mode. Emergency cleanup is owned
+outside the wrapper: POSIX fixture process group/Windows process tree termination,
+bounded observed close and parent-owned directory removal. A deliberately hung
+wrapper/CLI/worker regression and split-notification one-shot regression pass.
+Both independent review findings are fixed/rechecked; no substantive findings remain.
+Production TypeScript and dependency pins/lockfile are unchanged in S3.
+
+Developer serial full `npm run check` passed **431 tests/16 files** on macOS/Node
+**24.22.1** and **22.23.4**, npm **11.17.0**. Both included actual packed-install
+checks and pack dry-run **118 files**. Independent reviewer reran full Node 24 checks,
+actual packed installation (118 files/10 shim cases), pack dry-run, formatting,
+whitespace and Markdown targets (145 across 40 files), all passed.
+Orchestrator final `npm run check` passed **431 tests/16 files** on macOS/Node
+24.22.1/npm 11.17.0, including actual packed-install checks, ten npm-shim cases,
+build/exports, types/lint/architecture and formatting. Pack dry-run passed **118 files**.
+Independent final doc review passed 146 targets across 40 files; low status wording
+is corrected. Corrected six-cell remote CI remains pending until this milestone is pushed.
+No live/provider usefulness, coding-host trial, release or publication is asserted.
 
 ## S1 verification (2026-10-25)
 

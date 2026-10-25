@@ -8,15 +8,16 @@ when conclusions change, keeping accepted choices separate from hypotheses.
 On 2026-10-25 the user accepted stateless portable consultation and removed mandatory
 session storage/OS-specific prerequisites. [ADR 0004](decisions/0004-stateless-portable-consultation.md)
 and the current plan supersede historical session/storage and authorization wording
-below. No stateless migration, CLI, live inference or measured result exists.
+below. S1 stateless migration and S2 CLI are now implemented/reviewed offline;
+no live inference or measured usefulness exists.
 
-Read [system design](system-design.md) first for the current **proposed stateless**
+Read [system design](system-design.md) first for the current **stateless**
 contract, then [implementation plan](implementation-plan.md),
 [evaluation plan](evaluation-plan.md), and supporting
 [host](research/agent-integration.md) / [Jev/CLI](research/jev-cli.md) research.
-Commands, schemas, check templates, and limits are unreleased proposals—not runnable
-features or values individually chosen by the user. Review/freeze implementation
-defaults together; earlier examples here and in research are not competing contracts.
+Current commands/contracts are implemented but unreleased. Earlier examples here and
+in dated research remain conceptual history, not competing runtime contracts or values
+individually chosen by the user.
 See also [architecture](architecture.md), [shared context](agent-context.md), and
 [ADR 0001](decisions/0001-typescript-foundation.md).
 

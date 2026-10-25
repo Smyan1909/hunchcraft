@@ -28,6 +28,8 @@
   "files": [
     "dist",
     "src",
+    "docs/usage.md",
+    "examples/brief.json",
     "README.md",
     "LICENSE"
   ],
@@ -43,7 +45,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:package": "npm run build && node scripts/check-package.mjs",
-    "check": "npm run format:check && npm run typecheck && npm run lint && npm run lint:architecture && npm test && npm run check:package",
+    "check:packed": "npm run build && node scripts/check-packed.mjs",
+    "check": "npm run format:check && npm run typecheck && npm run lint && npm run lint:architecture && npm test && npm run check:package && npm run check:packed",
     "prepack": "npm run build"
   },
   "devDependencies": {

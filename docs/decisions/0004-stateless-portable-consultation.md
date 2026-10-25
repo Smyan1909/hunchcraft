@@ -1,6 +1,6 @@
 # 0004: Stateless portable consultation
 
-Status: accepted direction; detailed runtime contract proposed, not implemented
+Status: accepted; S1/S2 implemented and reviewed offline (unreleased)
 
 Date: 2026-10-25
 
@@ -47,8 +47,8 @@ Independent invocations have no shared cap, deduplication or revocation. Re-runn
 after timeout/output failure can incur another charge. Cancellation is not a billing
 guarantee. Consumers own changed-snapshot rejection and ordinary task verification.
 
-The existing session-based source is not silently reclassified as stateless. Its
-migration, tests and exact result shape must be reviewed before executable wiring.
+The existing session-based source was not silently reclassified as stateless. S1
+migration, tests and exact result shape were reviewed before S2 executable wiring.
 No CLI implementation, live calls, host runs, paid study, commit/push or publication
 is performed or authorized by this decision record itself.
 

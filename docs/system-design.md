@@ -4,7 +4,8 @@
 a stateless CLI with an environment-provisioned key and requested a simpler plan.
 [ADR 0004](decisions/0004-stateless-portable-consultation.md) records that decision.
 The behavior below is the implemented S1/S2 contract, not live-call authorization
-or proof of packaged installation, all-platform support or semantic usefulness.
+or proof of all-platform support or semantic usefulness. S3 packed installation is
+verified locally; corrected remote platform coverage remains pending.
 
 ## 1. Purpose and boundary
 
@@ -25,8 +26,8 @@ hunchcraft validate < brief.json
 hunchcraft consult < brief.json
 ```
 
-These commands are implemented. Actual packed installation and usage documentation
-are the remaining S3 milestone.
+These commands and [usage documentation](usage.md) are implemented. S3 actual packed
+installation is verified locally on macOS/Node 22/24; corrected remote CI remains pending.
 
 | Command    | Behavior                                                         | Credentials/network                    |
 | ---------- | ---------------------------------------------------------------- | -------------------------------------- |
@@ -120,7 +121,9 @@ restart or additional grace. Late callbacks cannot restart output. Controlled pa
 exit belongs only to executable termination after disposal. The worker inherits no
 credentials or preloads. See [ADR 0005](decisions/0005-invocation-owned-output-process.md)
 for the failed callback-write evidence, minimal environment and reclamation limits.
-Local macOS blocked-pipe tests pass; remaining platform/packed-install tests are S3 work.
+Local macOS blocked-pipe and packed-install tests pass; corrected remote platform
+coverage remains pending. Test-only FIFO saturation avoids Unix socket buffering
+assumptions; no platform helper is added to production.
 
 Retain the existing pinned `jev-1.13.0`/`https://api.typesafe.ai` policy, SDK logging off,
 zero retries, one underlying dispatch, redirects refused and 256 KiB response cap.
@@ -224,8 +227,8 @@ and a separate decision. Basic usage documentation belongs with the CLI mileston
 At `cde4ef8`, the old core, injected session-based consult/verify and TypeSafe provider
 were implemented and offline-tested. S1 now implements stateless application/result/input
 contracts directly and retires obsolete modules. No fake consent/reservation records
-are used. S2 implements CLI/bin and explicit Node composition; packed-install and
-remaining platform verification remain S3 work.
+are used. S2 implements CLI/bin and explicit Node composition; S3 adds actual packed-
+install/shim checks and public usage/example. Corrected remote CI remains pending.
 
 The planning retake changed documentation only. The user subsequently authorized
 implementing the bounded offline slices in [implementation plan](implementation-plan.md)

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "hunchcraft.brief.v1",
+  "brief": {
+    "originalRequest": "Export all filtered rows as CSV and keep the interface usable during export.",
+    "clarifications": [],
+    "requirements": [],
+    "standards": [],
+    "components": [
+      {
+        "id": "serialize",
+        "name": "CSV serializer",
+        "responsibility": "Produce a CSV download for the filtered results.",
+        "mechanism": "Serialize visible table rows synchronously and download the CSV.",
+        "claimStatus": "source-backed",
+        "requirementRefs": [],
+        "evidenceRefs": ["table-scope"],
+        "assumptionRefs": []
+      }
+    ],
+    "relationships": [],
+    "assumptions": [],
+    "evidence": [
+      {
+        "id": "table-scope",
+        "locator": "src/Table.ts",
+        "startLine": 1,
+        "content": "Table.rows contains only the current page of filtered results.",
+        "provenance": "synthetic-example"
+      }
+    ],
+    "localQuestions": []
+  }
+}

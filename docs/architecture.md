@@ -59,7 +59,8 @@ independently reviewed and tested offline. S2 adds CLI/bin and explicit Node com
 with lazy credential access and one invocation-owned output child. Parent code performs
 no descriptor writes; exact output acknowledgment and child exit 0 are required under
 the original Operation. Terminal diagnostics are omitted. Package-root imports still
-export no functional API. Packed-install and remaining platform evidence are S3 work.
+export no functional API. S3 verifies actual packed installation/shims and ships public
+usage/example. Local macOS Node 22/24 checks pass; corrected remote CI remains pending.
 
 ## Runtime boundary
 

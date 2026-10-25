@@ -68,17 +68,18 @@ Read [system design](system-design.md) → [implementation plan](implementation-
 → [evaluation plan](evaluation-plan.md) → supporting
 [host](research/agent-integration.md) and [provider](research/jev-cli.md) research.
 M1a and internal session-based M1b/M2 are implemented/verified offline at `cde4ef8`.
-The 2026-10-25 planning retake proposes stateless migration, then CLI composition and
-package readiness. Mandatory secure storage/ACL work is retired; design commands are
-not runnable. See [ADR 0004](decisions/0004-stateless-portable-consultation.md).
+The 2026-10-25 retake led to reviewed S1 stateless migration and S2 CLI composition;
+package readiness is S3. Mandatory secure storage/ACL work is retired. See
+[ADR 0004](decisions/0004-stateless-portable-consultation.md) and the shared context
+for current implementation and verification evidence.
 Research is dated source inspection, not a host/runtime test or live measurement.
 
-The current request is a planning retake; no runtime or live experiment is performed.
-Use existing bounded offline permission only after changed-contract review. Explicit
+The user authorized bounded offline implementation and reviewed/verified milestone
+commits/pushes by the orchestrator. No live experiment is authorized. Explicit
 consult authorizes supplied-input disclosure within a human-authorized workflow, not
 automatic transmission on key presence. No fake session adapter in production.
 No live/evaluation budget, host execution, datasets, release or outreach is authorized.
-Commit/push only when explicitly requested; old milestone-push instructions are historical.
+Specialists do not commit/push. Publication and external actions need separate requests.
 
 ## Typical chains
 

@@ -2,6 +2,7 @@ import { spawn, execFile, fork } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdtemp, rm, cp, writeFile, symlink, access } from 'node:fs/promises';
+import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -11,6 +12,7 @@ import { fixture } from '../../helpers/consultation-fakes.js';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const bin = join(root, 'dist/composition/cli.js');
+const fixtureDirectories = new WeakMap<ChildProcessWithoutNullStreams, string>();
 beforeAll(async () => {
   await promisify(execFile)(
     process.execPath,
@@ -21,7 +23,16 @@ beforeAll(async () => {
 function start(args: string[], entry = bin, cwd = root): ChildProcessWithoutNullStreams {
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (key.startsWith('TYPESAFE_')) delete env[key];
-  const child = spawn(process.execPath, [entry, ...args], { cwd, env, stdio: 'pipe' });
+  const fixture = entry.endsWith('cli-process.mjs');
+  const directory = fixture ? mkdtempSync(join(tmpdir(), 'hunchcraft parent fixture ')) : undefined;
+  if (directory) env.HUNCHCRAFT_TEST_DIRECTORY = directory;
+  const child = spawn(process.execPath, [entry, ...args], {
+    cwd,
+    env,
+    stdio: 'pipe',
+    detached: fixture && process.platform !== 'win32',
+  });
+  if (directory) fixtureDirectories.set(child, directory);
   child.stdin.on('error', () => {});
   return child;
 }
@@ -29,14 +40,62 @@ function completion(
   child: ChildProcessWithoutNullStreams,
   collect = true,
   collectStderr = true,
+  watchdogMs = 22000,
+  armOnHungReady = false,
 ): Promise<{ code: number | null; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     let stdout = '';
     let stderr = '';
-    const watchdog = setTimeout(() => {
-      child.kill('SIGKILL');
-      reject(new Error('CLI watchdog exceeded'));
-    }, 22000);
+    let timedOut = false;
+    let armed = !armOnHungReady;
+    let watchdog: ReturnType<typeof setTimeout>;
+    const closed = new Promise<void>((done) => child.once('close', () => done()));
+    const expire = (): void => {
+      timedOut = true;
+      const emergency = async (): Promise<void> => {
+        // Signal the owned group/tree while its observed leader is still live:
+        // never signal a numeric PID after observing that process exit.
+        if (child.exitCode === null && child.signalCode === null && child.pid !== undefined) {
+          if (fixtureDirectories.has(child) && process.platform !== 'win32')
+            process.kill(-child.pid, 'SIGKILL');
+          else if (fixtureDirectories.has(child))
+            await promisify(execFile)('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+              timeout: 2000,
+              windowsHide: true,
+            });
+          else child.kill('SIGKILL');
+        }
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([
+            closed,
+            new Promise<never>((_resolve, fail) => {
+              timer = setTimeout(
+                () => fail(new Error('Fixture termination/reaping watchdog exceeded')),
+                2000,
+              );
+            }),
+          ]);
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      };
+      emergency()
+        .then(
+          async () => {
+            const directory = fixtureDirectories.get(child);
+            if (directory) await rm(directory, { recursive: true, force: true });
+            reject(new Error('CLI watchdog exceeded'));
+          },
+          async () => {
+            const directory = fixtureDirectories.get(child);
+            if (directory) await rm(directory, { recursive: true, force: true });
+            reject(new Error('CLI watchdog cleanup failed'));
+          },
+        )
+        .catch(() => reject(new Error('CLI watchdog directory cleanup failed')));
+    };
+    watchdog = setTimeout(expire, armOnHungReady ? 5000 : watchdogMs);
     if (collect)
       child.stdout.on('data', (bytes: Buffer) => {
         stdout += bytes.toString('utf8');
@@ -44,6 +103,11 @@ function completion(
     if (collectStderr)
       child.stderr.on('data', (bytes: Buffer) => {
         stderr += bytes.toString('utf8');
+        if (!armed && stderr.includes('hung-ready\n')) {
+          armed = true;
+          clearTimeout(watchdog);
+          watchdog = setTimeout(expire, watchdogMs);
+        }
       });
     child.on('error', (error) => {
       clearTimeout(watchdog);
@@ -55,11 +119,70 @@ function completion(
     });
     child.on('close', (code) => {
       clearTimeout(watchdog);
-      resolve({ code, stdout, stderr });
+      if (timedOut) return;
+      const directory = fixtureDirectories.get(child);
+      (directory ? rm(directory, { recursive: true, force: true }) : Promise.resolve()).then(
+        () => resolve({ code, stdout, stderr }),
+        reject,
+      );
     });
   });
 }
+function interruptionNotification(signal: () => void): (bytes: Buffer) => void {
+  let text = '';
+  let sent = false;
+  return (bytes) => {
+    text += bytes.toString();
+    if (!sent && text.includes('output-started worker-eagain\n')) {
+      sent = true;
+      signal();
+    }
+  };
+}
 describe('actual executable (offline)', () => {
+  it('accumulates split interruption evidence and signals only once', () => {
+    let signals = 0;
+    const receive = interruptionNotification(() => signals++);
+    receive(Buffer.from('ready 123 eagain 8192\noutput-sta'));
+    receive(Buffer.from('rted worker-ea'));
+    expect(signals).toBe(0);
+    receive(Buffer.from('gain\n'));
+    expect(signals).toBe(1);
+    receive(Buffer.from('output-started worker-eagain\n'));
+    expect(signals).toBe(1);
+  });
+  it('watchdog externally reclaims a hung wrapper, descendants and fixture directory', async () => {
+    const child = start(['hung-fixture'], join(root, 'tests/helpers/cli-process.mjs'));
+    const directory = fixtureDirectories.get(child);
+    if (!directory) throw new Error('Missing parent-owned fixture directory');
+    let notifications = '';
+    child.stderr.on('data', (bytes: Buffer) => {
+      notifications += bytes.toString();
+    });
+    const done = completion(child, true, true, 150, true);
+    await expect(done).rejects.toThrow('CLI watchdog exceeded');
+    expect(notifications).toContain('hung-ready\n');
+    const pids = [...notifications.matchAll(/owned-pid (\d+)\n/g)].map((match) => Number(match[1]));
+    expect(pids).toHaveLength(2);
+    if (child.pid === undefined) throw new Error('Missing wrapper PID');
+    pids.push(child.pid);
+    // Observe OS reclamation under a separate bounded test-only cleanup budget.
+    const due = performance.now() + 2000;
+    while (
+      pids.some((pid) => {
+        try {
+          process.kill(pid, 0);
+          return true;
+        } catch {
+          return false;
+        }
+      }) &&
+      performance.now() < due
+    )
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    for (const pid of pids) expect(() => process.kill(pid, 0)).toThrow();
+    await expect(access(directory)).rejects.toThrow();
+  }, 10000);
   it.each([
     ['--help', 0],
     ['validate', 0],
@@ -116,7 +239,7 @@ describe('actual executable (offline)', () => {
       child.stderr.once('data', () => child.kill(signal));
       try {
         const result = await done;
-        expect(result.code).toBe(130);
+        expect(result.code, result.stderr).toBe(130);
         expect(result.stdout).toBe('');
       } finally {
         child.kill();
@@ -218,12 +341,14 @@ describe('actual executable (offline)', () => {
     let fillerPid: number | undefined;
     child.stderr.on('data', (bytes: Buffer) => {
       const match = /ready (\d+)/.exec(bytes.toString());
-      if (match?.[1]) fillerPid = Number(match[1]);
+      if (process.platform === 'win32' && match?.[1]) fillerPid = Number(match[1]);
     });
     try {
       const result = await done;
       expect(result.code).toBe(5);
       expect(result.stderr).toContain('ready');
+      if (process.platform !== 'win32')
+        expect(result.stderr).toMatch(/ready \d+ eagain [1-9]\d*\n/);
     } finally {
       child.kill();
       if (fillerPid) {
@@ -244,12 +369,16 @@ describe('actual executable (offline)', () => {
     let fillerPid: number | undefined;
     child.stdout.on('data', (bytes: Buffer) => {
       const match = /ready (\d+)/.exec(bytes.toString());
-      if (match?.[1]) fillerPid = Number(match[1]);
+      if (process.platform === 'win32' && match?.[1]) fillerPid = Number(match[1]);
     });
     try {
       const result = await done;
       expect(result.code).toBe(5);
-      expect(result.stdout).toMatch(/^ready \d+\n$/);
+      expect(result.stdout).toMatch(
+        process.platform === 'win32'
+          ? /^ready \d+ windows-pending-write\n$/
+          : /^ready \d+ eagain [1-9]\d*\n$/,
+      );
     } finally {
       child.kill();
       if (fillerPid) {
@@ -269,24 +398,19 @@ describe('actual executable (offline)', () => {
         join(root, 'tests/helpers/cli-process.mjs'),
       );
       const done = completion(child, false);
-      let fillerPid: number | undefined;
-      child.stderr.on('data', (bytes: Buffer) => {
-        const value = bytes.toString();
-        const match = /ready (\d+)/.exec(value);
-        if (match?.[1]) fillerPid = Number(match[1]);
-        if (value.includes('output-started')) child.kill('SIGINT');
-      });
+      child.stderr.on(
+        'data',
+        interruptionNotification(() => {
+          child.kill('SIGINT');
+        }),
+      );
       try {
-        expect((await done).code).toBe(130);
+        const result = await done;
+        expect(result.code, result.stderr).toBe(130);
+        expect(result.stderr).toMatch(/ready \d+ eagain [1-9]\d*\n/);
+        expect(result.stderr).toContain('output-started worker-eagain\n');
       } finally {
         child.kill();
-        if (fillerPid) {
-          try {
-            process.kill(fillerPid, 'SIGKILL');
-          } catch {
-            /* Already reaped. */
-          }
-        }
       }
     },
     25000,

@@ -1,8 +1,9 @@
 # TypeSafe provider: internal M2 boundary
 
 `createTypeSafeProvider` returns the internal SDK-free `DecisionProvider` port with
-`origin: "provider-http"`. Nothing is package-root exported. This slice has no CLI,
-environment reader, private storage, production composition or live authorization.
+`origin: "provider-http"`. Nothing functional is package-root exported. The provider
+itself has no CLI, environment reader or private storage. S2 supplies explicit Node
+production composition outside this boundary. Live use requires separate authorization.
 The caller must supply lazy asynchronous configuration, fetch and a clock; there
 are no global-fetch or real-clock defaults. Import and factory creation do not
 construct a client or read credentials. Each explicit evaluation constructs its own
@@ -102,7 +103,7 @@ calibration, secure-state platform verification, host runtime or savings measure
 was performed. The [stateless plan](../../../docs/implementation-plan.md) replaces
 mandatory secure admission with explicit consultation of supplied input. It still
 uses the reviewed S1 application migration and S2 explicit credential/transport/clock
-composition. Packed/platform verification and separately authorized live use remain
-outstanding. See the
+composition. Local packed verification passed; corrected remote platform CI and
+separately authorized live use remain outstanding. See the
 [frozen handoff](../../../docs/implementation-notes/m1b-m2.md) and
 [legacy sections 8–9](../../../docs/system-design-legacy.md#8-foreground-lifecycle-provider-boundary-and-validation).

@@ -2,104 +2,113 @@
 
 Fast hunches. Deliberate agents.
 
-Hunchcraft explores whether TypesafeAI's **Jev** judgments can help existing coding
-agents make better decisions. The agent proposes; Jev returns typed judgments and
-probabilities; the agent remains responsible for implementation and verification.
-Improved quality, lower cost and faster completion are hypotheses, not measured results.
+Hunchcraft is a stateless foreground CLI for a second look at a coding proposal.
+Supply the original request, a small component outline and selected evidence.
+Hunchcraft validates the brief, asks TypeSafe's **Jev** bounded questions, returns
+typed advisory judgments and exits. Your agent still implements and verifies the work.
 
-## Direction: a small, portable CLI
+For example: a plan to export visible table rows may miss a request to export **all**
+filtered rows. The [public example](examples/brief.json) captures that mismatch with
+synthetic evidence. It is valid input, not a claim about Jev's measured accuracy.
 
-The initial product is **stateless foreground consultation**:
+## Try validation first
 
-1. Supply a compact proposal, original request and selected evidence through stdin.
-2. Read `TYPESAFE_API_KEY` from the environment.
-3. Validate, consult once, return typed advisory output and exit.
-
-No required session setup, consent files, Windows ACL helpers, repository scan,
-persistent background process or host adapter. One invocation-owned Node output child
-isolates blocked stdout without additional setup. The key is the only service-specific setup;
-installation, supported Node.js, valid input and provider/network access still apply.
-Target macOS/Linux/Windows on Node-supported hardware, with support claims tied to tests.
-
-Explicit `consult` invocation authorizes disclosure of the supplied material under
-documented usage. An agent must operate within a human-authorized workflow. Key
-presence alone never triggers work or grants permission to transmit arbitrary content.
-No local Hunchcraft persistence does not imply provider zero retention.
-
-## Current status
-
-**Implemented (S1):** strict `brief.v1`/`result.v1` contracts, mandatory check compilation,
-stateless consultation and the retained TypeSafe SDK boundary. Session, consent,
-identity and durable verification modules are retired, without synthetic adapters.
-Developer full offline checks passed **334 tests in 11 files** on macOS/Node 24.22.1;
-independent review accepted S1 and rechecked added concurrency/mutation tests.
-
-**Implemented (S2):** help, stdin validation/consultation, npm bin mapping and explicit
-Node composition with lazy credentials. One killable output child keeps blocked stdout
-out of the parent; terminal stderr diagnostics are omitted. Developer and independent
-reviewer full checks passed **429 tests/16 files** on macOS/Node 24.22.1, including real
-blocked-pipe tests; pack dry-run passed with **116 files**. Actual packed-install and
-remaining platform checks are S3 work.
-
-No functional root API, shipped consultation skill, host adapter, live inference,
-evaluation runner or measured benefit exists.
-
-The 2026-10-25 planning retake replaces the former secure-storage-first roadmap.
-Commands run from a built checkout; packaged installation instructions follow in S3.
-No live/evaluation budget is authorized for development agents.
-
-## Read the plan
-
-- [System design](docs/system-design.md): the small proposed runtime contract.
-- [Implementation plan](docs/implementation-plan.md): three offline slices—migration,
-  CLI/composition, package readiness and usage.
-- [Evaluation plan](docs/evaluation-plan.md): optional, separately approved evidence work.
-- [Architecture](docs/architecture.md) and [ADR 0004](docs/decisions/0004-stateless-portable-consultation.md).
-- [Legacy specification](docs/system-design-legacy.md): historical implemented contracts,
-  not instructions to build persistent sessions. Earlier plans remain in Git at `cde4ef8`.
-
-Next: verify the actual packed artifact and document concise user setup and usage.
-Public APIs, skills, host adapters, persistence and background execution are optional,
-not prerequisites. Live calls, host trials, releases and publication need separate approval.
-
-## Development
+**Unreleased, version `0.0.0`.** Use a checkout or install its local npm tarball.
+These instructions do not assume an npm registry release.
 
 Use Node.js 22.13+ on the 22.x line or Node 24.x, and npm. The package runtime floor
-is 22.12.0. CI currently targets Node 22/24 on Linux/Windows; macOS execution evidence
-includes local Node 24 process tests. S1 milestone `5b228a7` passed remote CI; this is
-not evidence for the subsequent S2 source or all descriptor/platform combinations.
+is 22.12.0. From a checkout, run:
+
+```sh
+npm ci
+npm run build
+node dist/composition/cli.js --help
+```
+
+In zsh or bash, validate the example without credentials or provider calls:
+
+```sh
+node dist/composition/cli.js validate < examples/brief.json
+```
+
+Expected result, with exit `0`:
+
+```json
+{
+  "schemaVersion": "hunchcraft.result.v1",
+  "kind": "validation",
+  "status": "valid",
+  "checkSetId": "component-outline.v0",
+  "checkCount": 6
+}
+```
+
+See [usage](docs/usage.md) for local-tarball installation, PowerShell input redirection,
+human-authorized consultation, input limits and exit handling.
+
+## Consult deliberately
+
+`TYPESAFE_API_KEY` in a human-managed environment is the only service-specific setup.
+Consultation also needs valid input, supported Node, network access and a usable provider
+account. Help and validation need neither credentials nor provider access.
+
+Explicit `consult` invocation authorizes transmission of the supplied material to
+TypeSafe. Agent use requires a human-authorized workflow. Key presence alone never
+authorizes scanning, inference or arbitrary disclosure. Keep secrets out of briefs,
+arguments, chat, skills and logs. No Hunchcraft persistence does **not** mean provider
+zero retention.
+
+Noul probabilities and Score distributions are raw advice, not correctness
+certification or action permission. Discard advice when the request, proposal,
+evidence or assumptions change. Run normal tests and verification regardless.
+Quality, cost and latency benefits remain hypotheses, not measured outcomes.
+
+## What exists
+
+- Strict v1 brief/result contracts and mandatory check compilation.
+- `--help`, offline `validate`, one-shot `consult` and an npm executable.
+- Explicit Node composition with lazy credentials and a pinned TypeSafe provider.
+- One 15-second invocation lifetime, zero retries and bounded input/output.
+  One invocation-owned Node output child isolates blocked stdout. It is not a daemon.
+  Terminal stderr diagnostics are deliberately omitted.
+
+There is no repository scan, persistent session, cache, background service or advice
+execution. No functional package-root API, shipped consultation skill or host adapter
+exists. Existing coding agents need no custom harness or main-model replacement.
+
+S1/S2/S3 are implemented and independently reviewed offline. Full macOS checks passed
+on Node 22.23.4 and 24.22.1: **431 tests**, plus actual packed-install/bin checks.
+Corrected six-cell remote CI remains pending. The earlier S2 Linux blocked-output
+test setup was repaired with verified FIFO saturation and emergency fixture cleanup;
+its failed run is not Linux acceptance. S2 Windows Node 22/24 CI passed.
+Target platforms are macOS, Linux and Windows. Configured CI is not proof of a passed run. See
+[shared context](https://github.com/Smyan1909/hunchcraft/blob/main/docs/agent-context.md) for milestone-specific evidence and current gaps.
+Offline checks do not establish live inference, usefulness or savings.
+
+## Contribute
 
 ```sh
 npm ci
 npm run check
 ```
 
-| Command                     | Purpose                                              |
-| --------------------------- | ---------------------------------------------------- |
-| `npm run build`             | Compile ESM JavaScript, declarations and source maps |
-| `npm run typecheck`         | Check source, tests and TS configuration             |
-| `npm run lint`              | Type-aware linting                                   |
-| `npm run lint:architecture` | Check dependency boundaries                          |
-| `npm run format:check`      | Check maintained file formatting                     |
-| `npm test`                  | Run offline tests                                    |
-| `npm run check:package`     | Build and load actual package exports                |
-| `npm run check`             | Run all local checks                                 |
-| `npm pack --dry-run`        | Inspect package contents without publishing          |
+Read [CONTRIBUTING.md](https://github.com/Smyan1909/hunchcraft/blob/main/CONTRIBUTING.md), the [test map](https://github.com/Smyan1909/hunchcraft/blob/main/tests/README.md) and
+[architecture](https://github.com/Smyan1909/hunchcraft/blob/main/docs/architecture.md). Dependencies point inward through application,
+SDK-free ports and pure core. Only composition wires providers to integrations.
+`@typesafe-ai/sdk@0.6.0` is the sole runtime dependency. TypeScript is pinned to 6.0.3.
 
-`@typesafe-ai/sdk@0.6.0` is the sole runtime dependency. TypeScript is pinned to
-6.0.3. Nothing functional is exported from the package root yet. See
-[CONTRIBUTING.md](CONTRIBUTING.md) and [test map](tests/README.md).
+For coding-agent contributors, start with [AGENTS.md](https://github.com/Smyan1909/hunchcraft/blob/main/AGENTS.md) and
+[shared context](https://github.com/Smyan1909/hunchcraft/blob/main/docs/agent-context.md). The [OpenCode team](https://github.com/Smyan1909/hunchcraft/blob/main/docs/opencode-agents.md)
+and `.agents/skills/` support repository development, not Hunchcraft runtime agents.
+Development agents have no live/evaluation budget. Publication requires separate approval.
 
-`src/` separates pure core, SDK-free ports, application, providers, integrations
-and composition. Read their layer READMEs for **implemented** contracts. Default
-tests use offline fakes, never production fake success. Unknown usage/cost is not zero.
+## Design and evidence
 
-## Coding-agent contributors
-
-Read [AGENTS.md](AGENTS.md) and [shared context](docs/agent-context.md).
-Project development skills live in `.agents/skills/`. OpenCode's development
-specialists are described in [team guide](docs/opencode-agents.md); they are not
-Hunchcraft runtime agents. Commit, push or publish only when explicitly requested.
+- [System design](https://github.com/Smyan1909/hunchcraft/blob/main/docs/system-design.md) and [implementation plan](https://github.com/Smyan1909/hunchcraft/blob/main/docs/implementation-plan.md).
+- [Stateless decision](https://github.com/Smyan1909/hunchcraft/blob/main/docs/decisions/0004-stateless-portable-consultation.md) and
+  [output isolation](https://github.com/Smyan1909/hunchcraft/blob/main/docs/decisions/0005-invocation-owned-output-process.md).
+- [Evaluation plan](https://github.com/Smyan1909/hunchcraft/blob/main/docs/evaluation-plan.md): optional, separately authorized measurement.
+- [Legacy design](https://github.com/Smyan1909/hunchcraft/blob/main/docs/system-design-legacy.md): historical session contracts, not current setup.
 
 ## License
 

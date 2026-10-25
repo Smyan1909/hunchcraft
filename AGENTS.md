@@ -7,7 +7,8 @@ configured through `TYPESAFE_API_KEY`. S1 stateless v1 contracts/application and
 retained TypeSafe boundary are implemented, independently reviewed and tested offline.
 Session/consent/identity/durable verify modules are retired. S2 CLI/bin and explicit
 production composition are implemented/reviewed offline, including one invocation-owned
-output child (ADR 0005). No functional
+output child (ADR 0005). S3 actual packed-install/shim checks and usage docs are complete
+locally; corrected six-cell remote CI remains to be observed. No functional
 public API, shipped consultation skill or host adapter exists. See ADR 0004.
 
 ## Start here
@@ -63,16 +64,18 @@ upstream TypeSafe skill; put project-specific rules in our own docs and skills.
   run `npm run format:check` and check paths and instructions.
 - Add meaningful tests for behavior and regressions; default tests are offline.
   Core, application and real-SDK/fake-HTTP contract suites exist;
-  `passWithNoTests` is removed. S2 developer and independent reviewer full checks
-  passed 429 tests/16 files on macOS/Node 24.22.1, including real blocked-pipe tests.
-  Pack dry-run has 116 files including the output worker, excluding test helpers.
+  `passWithNoTests` is removed. S3 developer full checks passed 431 tests/16 files
+  on macOS/Node 22.23.4 and 24.22.1; independent reviewer reran Node 24 successfully.
+  Actual packed-install and dry-run have 118 files including usage/example/output
+  worker, excluding private helpers. Corrected Unix FIFO saturation and emergency
+  fixture cleanup regressions pass locally; old S2 Linux CI failed the former setup.
   See shared context for final
   orchestrator and remote evidence. Offline checks do not establish live usefulness.
 - For package/export changes, inspect `npm pack --dry-run` as well.
 - Keep `package-lock.json` synchronized. TypeScript is pinned to 6.0.3 for current
   typescript-eslint compatibility; check peer support before upgrading.
   `@typesafe-ai/sdk@0.6.0` is the sole runtime dependency; SDK types stay in providers.
-- Next is packed-artifact/platform verification and usage documentation (S3).
+- Next is observing corrected six-cell remote CI, then a user-selected next milestone.
   The 2026-10-25 planning retake supersedes mandatory OS ACL/root-identity,
   secure-storage and session work; historical docs are not current instructions.
 - Explicit consult authorizes disclosure of supplied input under a human-authorized
